@@ -883,8 +883,7 @@ export default function App() {
                                     textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
                                     whiteSpace: c.wrap ? 'normal' : 'nowrap',
                                     wordBreak: c.wrap ? 'break-word' : undefined,
-                                  }}>{assigned ? label : 'Empty'}</span>
-                                  {c.suffix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{'\u00A0'}{c.suffix}</span>}
+                                  }}>{assigned ? label : 'Empty'}{c.suffix ? '\u00A0' + c.suffix : ''}</span>
                                   {(align === 'left' || align === 'center') && ci < row.cells.length - 1 && <span style={{ flex: '1 1 0' }} />}
                                 </div>
                               </div>
@@ -986,8 +985,7 @@ export default function App() {
                               textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
                               whiteSpace: c.wrap ? 'normal' : 'nowrap',
                               wordBreak: c.wrap ? 'break-word' : undefined,
-                            }}>{val}</span>
-                            {c.suffix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{'\u00A0'}{c.suffix}</span>}
+                            }}>{val}{c.suffix ? '\u00A0' + c.suffix : ''}</span>
                             {(align === 'left' || align === 'center') && ci < row.cells.length - 1 && <span style={{ flex: '1 1 0' }} />}
                           </div>
                         </div>
