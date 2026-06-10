@@ -7,7 +7,7 @@ import {
   Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
   AlignCenter, AlignRight, WrapText, Grid3X3, Type,
-  Download, Upload, Check, PanelLeft,
+  Download, Upload,
 } from 'lucide-react';
 
 /* ── Types & Data ─────────────────────────────────── */
@@ -17,40 +17,8 @@ interface ColCell  { id: string; field: string; width: number; align?: 'left' | 
 interface RowConfig { id: string; name: string; cells: ColCell[]; }
 interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
 
-const CATEGORY_COLORS: Record<string, string> = {
-  'Scene Info': 'text-orange-600',
-  'Shooting': 'text-blue-600',
-  'Cast & Talent': 'text-violet-600',
-  'Production': 'text-emerald-600',
-  'Breakdown': 'text-amber-600',
-  'VFX & Audio': 'text-cyan-600',
-  'Misc': 'text-rose-600',
-  'Special': 'text-zinc-500',
-};
-
-const CATEGORY_BG: Record<string, string> = {
-  'Scene Info': 'bg-orange-50',
-  'Shooting': 'bg-blue-50',
-  'Cast & Talent': 'bg-violet-50',
-  'Production': 'bg-emerald-50',
-  'Breakdown': 'bg-amber-50',
-  'VFX & Audio': 'bg-cyan-50',
-  'Misc': 'bg-rose-50',
-  'Special': 'bg-zinc-50',
-};
-
-const CATEGORY_ACCENT: Record<string, string> = {
-  'Scene Info': 'border-l-orange-400',
-  'Shooting': 'border-l-blue-400',
-  'Cast & Talent': 'border-l-violet-400',
-  'Production': 'border-l-emerald-400',
-  'Breakdown': 'border-l-amber-400',
-  'VFX & Audio': 'border-l-cyan-400',
-  'Misc': 'border-l-rose-400',
-  'Special': 'border-l-zinc-300',
-};
-
 const ALL_FIELDS: FieldDef[] = [
+  // Percentages proportional to PrintSchedule pt widths (Row 1 = Scene#15 + Call20 + Dur30 + I/E34 + Set120 + D/N40 + Cast56 + Pages34 = 349pt → 100%)
   { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 4.30, align: 'center', icon: Hash,        category: 'Scene Info' },
   { key: 'callTime',    label: 'Call Time',  defaultWidth: 5.73, align: 'left',   icon: Clock,       category: 'Shooting' },
   { key: 'duration',    label: 'Duration',   defaultWidth: 8.60, align: 'left',   icon: Timer,       category: 'Shooting' },
@@ -110,7 +78,7 @@ function formatDuration(minutes: number): string {
 
 function cid() { return `c${Math.random().toString(36).slice(2, 7)}`; }
 
-const MIN_PCT = 2.5;
+const MIN_PCT = 2.5; // minimum cell width %
 
 function normalizeCells(cells: ColCell[]): ColCell[] {
   if (cells.length === 0) return cells;
@@ -129,6 +97,7 @@ function mkRow(name: string, keys: string[]): RowConfig {
 
 const DEFAULT_ROWS = (): RowConfig[] => [
   mkRow('Row 1', ['sceneNumber','callTime','duration','intExt','set','dayNight','cast','pages']),
+  // Row 2: empty spacer aligns description start under I/E (Scene# 4.18 + Call 6 + Dur 8.36 = 18.54%)
   { id: cid(), name: 'Row 2', cells: [
     { id: cid(), field: '', width: 18.54 },
     { id: cid(), field: 'description', width: 81.46, suffix: undefined },
@@ -145,7 +114,7 @@ function cellValue(field: string): string {
   return v;
 }
 
-const STYLE = { bg: '#ffffff', fg: '#363636' };
+const STYLE = { bg: '#ffffff', fg: '#464646' };
 
 /* ── Undo / Redo ──────────────────────────────────── */
 
@@ -215,7 +184,7 @@ export default function App() {
         const active = designs.find(d => d.id === activeId);
         if (active) return active.rows;
       }
-    } catch { }
+    } catch { /* ignore corrupt data */ }
     return DEFAULT_ROWS();
   }, []);
 
@@ -232,6 +201,7 @@ export default function App() {
   const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const lastSpacerSync = useRef(0);
 
+  /* auto-sync Row 2 spacer with Row 1 first 3 cells */
   useEffect(() => {
     const r1 = rows[0];
     const r2 = rows[1];
@@ -269,6 +239,8 @@ export default function App() {
   const used   = new Set(rows.flatMap(r => r.cells.map(c => c.field)).filter(f => f && f !== 'text'));
   const placed = used.size;
   const total  = ALL_FIELDS.length;
+
+  /* ── Design management (localStorage) ── */
 
   const [designs, setDesigns] = useState<RibbonDesign[]>(() => {
     try { const raw = localStorage.getItem('ribbon_designs'); return raw ? JSON.parse(raw) : []; }
@@ -357,6 +329,7 @@ export default function App() {
     setShowDesigns(false);
   }, [designs, replace]);
 
+  /* auto-save active design (debounced) */
   const saveTimer = useRef(0);
   useEffect(() => {
     if (!activeId) return;
@@ -374,6 +347,8 @@ export default function App() {
     }
     return null;
   }, [rows]);
+
+  /* actions */
 
   const assign = useCallback((cellId: string, key: string) => {
     const f = FIELD_MAP[key];
@@ -503,6 +478,8 @@ export default function App() {
     commit(next);
   }, [rows, commit]);
 
+  /* resize effect */
+
   useEffect(() => {
     if (!resizing) return;
     const onMove = (e: MouseEvent) => {
@@ -541,6 +518,8 @@ export default function App() {
     return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
   }, [resizing, liveMutate]);
 
+  /* keyboard — use refs for stable effect */
+
   const selIdRef = useRef(selId);
   selIdRef.current = selId;
   const changeOpenRef = useRef(changeOpen);
@@ -575,6 +554,8 @@ export default function App() {
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
+  /* helpers */
+
   const selCell = selId ? findCell(selId) : null;
 
   const getAlign = (c?: ColCell) => {
@@ -585,70 +566,51 @@ export default function App() {
   const getLabel = (field: string) => { if (!field) return 'Empty'; const f = FIELD_MAP[field]; return f ? f.label : field; };
 
   return (
-    <div className="h-screen flex flex-col text-zinc-800">
+    <div className="h-screen flex flex-col bg-zinc-50 text-zinc-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif' }}>
       {/* ══ Top bar ══ */}
-      <header className="flex items-center gap-3 px-5 py-2.5 bg-white border-b border-zinc-200/80 shrink-0 select-none shadow-sm z-30">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center">
-            <LayoutGrid className="w-3.5 h-3.5 text-white" />
-          </div>
-          <span className="text-sm font-semibold text-zinc-800 hidden sm:inline">Ribbon</span>
-        </div>
-
-        <div className="w-px h-5 bg-zinc-200" />
-
+      <header className="flex items-center gap-3 px-5 py-2 bg-white border-b border-zinc-200 shrink-0 select-none">
+        <LayoutGrid className="w-4 h-4 text-blue-500" />
         <div className="relative">
-          <button onClick={() => setShowDesigns(o => !o)}
-            className="flex items-center gap-1.5 hover:bg-zinc-100 rounded-lg px-2.5 py-1.5 transition-colors">
-            <span className="text-[13px] font-medium text-zinc-700">{activeDesign?.name || 'Untitled'}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+          <button onClick={() => setShowDesigns(o => !o)} className="flex items-center gap-1 hover:bg-zinc-100 rounded px-1.5 py-0.5">
+            <span className="text-[13px] font-semibold text-zinc-800">{activeDesign?.name || 'Untitled'}</span>
+            <ChevronDown className="w-3 h-3 text-zinc-400" />
           </button>
           {showDesigns && (
             <>
               <div className="fixed inset-0 z-40" onClick={() => setShowDesigns(false)} />
-              <div className="absolute z-50 left-0 top-full mt-1.5 bg-white border border-zinc-200 rounded-xl shadow-xl py-1.5 min-w-[220px] max-h-[320px] overflow-y-auto">
-                <div className="px-3 pb-1.5 mb-1 border-b border-zinc-100">
-                  <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Saved Designs</span>
-                </div>
+              <div className="absolute z-50 left-0 top-full mt-1 bg-white border border-zinc-200 rounded-lg shadow-xl py-1 min-w-[200px] max-h-[300px] overflow-y-auto">
                 {designs.map(d => (
                   <button key={d.id} onClick={() => switchDesign(d.id)}
-                    className={`w-full text-left px-3 py-2 text-xs hover:bg-zinc-50 flex items-center gap-2.5 transition-colors ${
-                      d.id === activeId ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'
-                    }`}>
-                    <span className="w-5 h-5 rounded bg-zinc-100 flex items-center justify-center shrink-0">
-                      <LayoutGrid className={`w-3 h-3 ${d.id === activeId ? 'text-blue-500' : 'text-zinc-400'}`} />
-                    </span>
+                    className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-zinc-50 flex items-center gap-2 ${d.id === activeId ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'}`}>
                     <span className="truncate flex-1">{d.name}</span>
-                    {d.id === activeId && <Check className="w-3.5 h-3.5 text-blue-500 shrink-0" />}
-                    <span className="text-[10px] text-zinc-300 shrink-0">{new Date(d.createdAt).toLocaleDateString()}</span>
+                    <span className="text-[9px] text-zinc-300 shrink-0">{new Date(d.createdAt).toLocaleDateString()}</span>
                   </button>
                 ))}
                 {designs.length === 0 && (
-                  <div className="px-3 py-3 text-[11px] text-zinc-400 text-center">No saved designs yet</div>
+                  <div className="px-3 py-2 text-[10px] text-zinc-400 text-center">No saved designs</div>
                 )}
-                <div className="border-t border-zinc-100 mt-1.5 pt-1.5 space-y-0.5">
+                <div className="border-t border-zinc-100 mt-1 pt-1">
                   <button onClick={() => { const n = prompt('Design name'); if (n) createDesign(n.trim()); setShowDesigns(false); }}
-                    className="w-full text-left px-3 py-1.5 text-[11px] text-blue-600 hover:bg-blue-50 flex items-center gap-2.5 transition-colors">
-                    <Plus className="w-3.5 h-3.5" /> New design
+                    className="w-full text-left px-3 py-1.5 text-[10px] text-blue-600 hover:bg-blue-50 flex items-center gap-2">
+                    <Plus className="w-3 h-3" /> New design
                   </button>
                   {activeDesign && (
                     <>
                       <button onClick={() => { const n = prompt('Rename', activeDesign.name); if (n) renameDesign(activeId, n.trim()); setShowDesigns(false); }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2.5 transition-colors">
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2">
                         &hellip; Rename
                       </button>
                       <button onClick={() => { exportDesign(); setShowDesigns(false); }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2.5 transition-colors">
-                        <Download className="w-3.5 h-3.5" /> Export
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2">
+                        <Download className="w-3 h-3" /> Export
                       </button>
                       <button onClick={() => { importDesign(); setShowDesigns(false); }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2.5 transition-colors">
-                        <Upload className="w-3.5 h-3.5" /> Import
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2">
+                        <Upload className="w-3 h-3" /> Import
                       </button>
-                      <div className="border-t border-zinc-100 my-1" />
                       <button onClick={() => { if (confirm(`Delete "${activeDesign.name}"?`)) deleteDesign(activeId); setShowDesigns(false); }}
-                        className="w-full text-left px-3 py-1.5 text-[11px] text-red-500 hover:bg-red-50 flex items-center gap-2.5 transition-colors">
-                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2">
+                        <Trash2 className="w-3 h-3" /> Delete
                       </button>
                     </>
                   )}
@@ -657,31 +619,23 @@ export default function App() {
             </>
           )}
         </div>
-
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-100 text-[11px] font-medium text-zinc-500">
-          <span className="tabular-nums">{placed}</span>
-          <span className="text-zinc-300">/</span>
-          <span className="tabular-nums">{total}</span>
-          <span className="text-zinc-400 ml-0.5">fields</span>
-        </div>
-
+        <span className="text-[11px] text-zinc-400">{placed}/{total} fields used</span>
         <div className="flex-1" />
-
-        <div className="flex items-center gap-0.5">
+        <div className="flex items-center gap-1">
           <button onClick={undo} disabled={!canUndo}
-            className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 disabled:opacity-25 transition-colors"
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-zinc-100 disabled:opacity-25"
             title="Undo (⌘Z)">
             <Undo2 className="w-4 h-4 text-zinc-500" />
           </button>
           <button onClick={redo} disabled={!canRedo}
-            className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 disabled:opacity-25 transition-colors"
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-zinc-100 disabled:opacity-25"
             title="Redo (⌘⇧Z)">
             <Redo2 className="w-4 h-4 text-zinc-500" />
           </button>
-          <div className="w-px h-5 bg-zinc-200 mx-1.5" />
+          <div className="w-px h-5 bg-zinc-200 mx-2" />
           <button onClick={reset}
-            className="h-8 px-3 text-[11px] font-medium rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700 transition-colors flex items-center gap-1.5 shadow-sm">
-            <RotateCcw className="w-3.5 h-3.5" /> Reset
+            className="h-7 px-3 text-[11px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 flex items-center gap-1.5">
+            <RotateCcw className="w-3 h-3" /> Reset
           </button>
         </div>
       </header>
@@ -689,47 +643,45 @@ export default function App() {
       {/* ══ Body ══ */}
       <div className="flex-1 flex overflow-hidden">
         {/* ── Left: Palette ── */}
-        <aside className="w-[188px] shrink-0 bg-white border-r border-zinc-200/80 overflow-y-auto no-print">
-          <div className="p-3.5">
-            <div className="flex items-center gap-2 mb-4 mt-0.5">
-              <PanelLeft className="w-4 h-4 text-zinc-400" />
-              <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">Fields</span>
+        <aside className="w-[160px] shrink-0 bg-white border-r border-zinc-200 overflow-y-auto">
+          <div className="p-3">
+            <div className="flex items-center gap-1.5 mb-3">
+              <Eye className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Fields</span>
+              <span className="ml-auto text-[10px] tabular-nums text-zinc-400">{placed}/{total}</span>
             </div>
 
             {CATEGORIES.map(cat => {
               const items = ALL_FIELDS.filter(f => f.category === cat);
               const catUsed = items.filter(f => used.has(f.key)).length;
-              const allUsed = catUsed === items.length;
               return (
-                <div key={cat} className="mb-4">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <div className={`w-0.5 h-3 rounded-full shrink-0 ${CATEGORY_COLORS[cat]?.replace('text-', 'bg-') || 'bg-zinc-300'}`} />
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide truncate">{cat}</span>
-                    <span className={`ml-auto text-[10px] tabular-nums ${allUsed ? 'text-blue-500 font-medium' : 'text-zinc-300'}`}>{catUsed}/{items.length}</span>
+                <div key={cat} className="mb-3">
+                  <div className="flex items-center gap-1 mb-1 text-left">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide truncate">{cat}</span>
+                    <span className="ml-auto text-[9px] text-zinc-300">{catUsed}/{items.length}</span>
                   </div>
                   <div className="space-y-0.5">
                     {items.map(f => {
                       const inUse = used.has(f.key);
                       const Icon = f.icon;
-                      const catColor = CATEGORY_COLORS[cat] || 'text-zinc-400';
                       return (
                         <button
                           key={f.key}
                           onClick={() => { if (selId) assign(selId, f.key); }}
                           draggable
                           onDragStart={e => e.dataTransfer.setData('text/field', f.key)}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-2 group ${
+                          className={`w-full text-left px-2 py-1 rounded transition-colors flex items-center gap-1.5 group ${
                             inUse
-                              ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200/70'
-                              : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-700'
+                              ? 'bg-blue-50 ring-1 ring-inset ring-blue-200/60 text-blue-700 hover:bg-blue-100'
+                              : 'bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700'
                           }`}
                         >
-                          <Icon className={`w-3.5 h-3.5 shrink-0 ${inUse ? catColor : 'text-zinc-300 group-hover:text-zinc-400'} transition-colors`} />
-                          <span className="text-[11px] font-medium truncate flex-1">{f.label}</span>
+                          <Icon className={`w-3 h-3 shrink-0 ${inUse ? 'text-blue-400' : 'text-zinc-300'}`} />
+                          <span className="text-[10px] truncate">{f.label}</span>
                           {inUse ? (
-                            <Check className="w-3 h-3 shrink-0 text-blue-500" />
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                           ) : (
-                            <GripHorizontal className="w-3 h-3 text-zinc-200 opacity-0 group-hover:opacity-100 shrink-0 transition-opacity" />
+                            <GripHorizontal className="w-2.5 h-2.5 text-zinc-200 ml-auto opacity-0 group-hover:opacity-100 shrink-0" />
                           )}
                         </button>
                       );
@@ -737,70 +689,51 @@ export default function App() {
                   </div>
                 </div>
               );
-            })}
-          </div>
+                    })}
+                    <div style={{
+                      flexShrink: 0, width: '48px',
+                      borderLeft: '1px solid rgba(0,0,0,0.10)',
+                    }} />
+                  </div>
         </aside>
 
         {/* ── Canvas ── */}
-        <div className="flex-1 overflow-auto canvas-bg p-10 pr-24">
-          <div className="max-w-[960px] mx-auto space-y-8">
+        <div className="flex-1 overflow-auto bg-zinc-100/70 p-8 pr-20">
+          <div className="max-w-[960px] mx-auto space-y-6">
 
             {/* ══ Designer ══ */}
-            <section className="bg-white rounded-xl border border-zinc-200/80 shadow-sm overflow-hidden">
-              {/* Designer header */}
-              <div className="flex items-center justify-between px-5 py-3 border-b border-zinc-100">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-6 h-6 rounded-md bg-zinc-100 flex items-center justify-center">
-                    <LayoutGrid className="w-3.5 h-3.5 text-zinc-500" />
-                  </div>
-                  <span className="text-xs font-semibold text-zinc-700">Designer</span>
-                  {selCell ? (
-                    <span className="text-[11px] text-zinc-400 font-mono ml-2 hidden sm:inline">
-                      {selCell.row.name} &middot; col {selCell.ci + 1} &middot; <span className="text-blue-500 font-medium">{selCell.cell.width.toFixed(1)}%</span>
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-zinc-400 ml-2 hidden sm:inline">Select a cell to edit</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-0.5">
-                  <button onClick={() => setShowGrid(g => !g)}
-                    className={`h-7 w-7 rounded-md flex items-center justify-center transition-colors ${
-                      showGrid ? 'bg-blue-50 text-blue-600' : 'text-zinc-400 hover:bg-zinc-100'
-                    }`}
-                    title={`Grid lines: ${showGrid ? 'ON' : 'OFF'}`}>
-                    <Grid3X3 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Designer</span>
               </div>
 
-              {/* Toolbar */}
-              <div className="flex items-center gap-1 px-4 py-2.5 border-b border-zinc-100 bg-zinc-50/50 flex-wrap no-print">
+              {/* Action bar — always visible to prevent layout jumping */}
+              <div className="flex items-center gap-1.5 mb-2 flex-wrap" style={{ minHeight: 28 }}>
+                {selCell ? (
+                  <span className="text-[10px] text-zinc-400 font-mono mr-1">{selCell.row.name} &middot; col {selCell.ci + 1} &middot; {selCell.cell.width.toFixed(1)}%</span>
+                ) : (
+                  <span className="text-[10px] text-zinc-400 mr-1">Select a cell to edit</span>
+                )}
                 <div className="relative">
-                  <button onClick={(e) => { if (selCell) { openMenu(e); } }} disabled={!selCell}
-                    className="h-8 px-3 text-[11px] font-medium rounded-lg bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 hover:border-zinc-300 disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1.5 shadow-sm">
-                    <ArrowRightLeft className="w-3.5 h-3.5" /> Change <ChevronDown className="w-3 h-3 text-zinc-400" />
+                  <button onClick={(e) => { if (selCell) { openMenu(e); } }} disabled={!selCell} className="h-7 px-2.5 text-[10px] font-medium rounded-md bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1">
+                    <ArrowRightLeft className="w-3 h-3" /> Change
+                    <ChevronDown className="w-3 h-3 text-zinc-400" />
                   </button>
                 </div>
-                <div className="w-px h-5 bg-zinc-200 mx-1" />
-                <button onClick={() => selCell && removeCell(selCell.row.id, selCell.ci)} disabled={!selCell || (selCell ? selCell.row.cells.length <= 1 : true)}
-                  className="h-8 px-2.5 text-[11px] rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200 disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1.5 shadow-sm">
-                  <Trash2 className="w-3.5 h-3.5" /> Cell
+                <button onClick={() => selCell && removeCell(selCell.row.id, selCell.ci)} disabled={!selCell || (selCell ? selCell.row.cells.length <= 1 : true)} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5">
+                  <Trash2 className="w-3 h-3" /> Delete Cell
                 </button>
-                <button onClick={() => selCell && setSelId(addCell(selCell.row.id, selCell.ci))} disabled={!selCell}
-                  className="h-8 px-2.5 text-[11px] rounded-lg bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 hover:border-zinc-300 disabled:opacity-30 disabled:pointer-events-none transition-all flex items-center gap-1.5 shadow-sm"
-                  title="Insert cell after selected">
-                  <Plus className="w-3.5 h-3.5" /> Insert
+                <button onClick={() => selCell && setSelId(addCell(selCell.row.id, selCell.ci))} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Insert cell after selected">
+                  <Plus className="w-3 h-3" /> Insert After
                 </button>
-                <div className="w-px h-5 bg-zinc-200 mx-1" />
-                <button onClick={() => selCell && moveCell(selCell.row.id, selCell.ci, -1)} disabled={!selCell || selCell.ci === 0}
-                  className="h-8 w-8 rounded-lg bg-white border border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300 disabled:opacity-25 disabled:pointer-events-none transition-all flex items-center justify-center shadow-sm">
-                  <ArrowLeft className="w-3.5 h-3.5" />
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
+                <button onClick={() => selCell && moveCell(selCell.row.id, selCell.ci, -1)} disabled={!selCell || selCell.ci === 0} className="h-7 w-7 rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-25 flex items-center justify-center" title="Move left">
+                  <ArrowLeft className="w-3 h-3" />
                 </button>
-                <button onClick={() => selCell && moveCell(selCell.row.id, selCell.ci, 1)} disabled={!selCell || selCell.ci >= selCell.row.cells.length - 1}
-                  className="h-8 w-8 rounded-lg bg-white border border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300 disabled:opacity-25 disabled:pointer-events-none transition-all flex items-center justify-center shadow-sm">
-                  <ArrowRight className="w-3.5 h-3.5" />
+                <button onClick={() => selCell && moveCell(selCell.row.id, selCell.ci, 1)} disabled={!selCell || selCell.ci >= selCell.row.cells.length - 1} className="h-7 w-7 rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-25 flex items-center justify-center" title="Move right">
+                  <ArrowRight className="w-3 h-3" />
                 </button>
-                <div className="w-px h-5 bg-zinc-200 mx-1" />
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
                 {(['left', 'center', 'right'] as const).map(a => {
                   const Icon = a === 'left' ? AlignLeft : a === 'center' ? AlignCenter : AlignRight;
                   const active = selCell?.cell.align === a || (!selCell?.cell.align && getAlign(selCell?.cell) === a);
@@ -808,44 +741,48 @@ export default function App() {
                     <button key={a}
                       onClick={() => selCell && setAlign(selId!, active ? undefined : a)}
                       disabled={!selCell}
-                      className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all disabled:opacity-25 disabled:pointer-events-none shadow-sm ${
-                        active ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300'
+                      className={`h-7 w-7 rounded-md border flex items-center justify-center disabled:opacity-25 ${
+                        active ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
                       }`}
-                      title={`Align ${a}`}>
-                      <Icon className="w-3.5 h-3.5" />
+                      title={`Align ${a}${active ? ' (click to reset)' : ''}`}>
+                      <Icon className="w-3 h-3" />
                     </button>
                   );
                 })}
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
                 <button onClick={() => selCell && setWrapCell(selId!, !selCell.cell.wrap)}
                   disabled={!selCell}
-                  className={`h-8 w-8 rounded-lg border flex items-center justify-center transition-all disabled:opacity-25 disabled:pointer-events-none shadow-sm ${
-                    selCell?.cell.wrap ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50 hover:border-zinc-300'
+                  className={`h-7 w-7 rounded-md border flex items-center justify-center disabled:opacity-25 ${
+                    selCell?.cell.wrap ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
                   }`}
-                  title={`Wrap: ${selCell?.cell.wrap ? 'ON' : 'OFF'}`}>
-                  <WrapText className="w-3.5 h-3.5" />
+                  title={`Wrap text: ${selCell?.cell.wrap ? 'ON' : 'OFF'}`}>
+                  <WrapText className="w-3 h-3" />
+                </button>
+                <button onClick={() => setShowGrid(g => !g)}
+                  className={`h-7 w-7 rounded-md border flex items-center justify-center ${
+                    showGrid ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
+                  }`}
+                  title={`Preview grid: ${showGrid ? 'ON' : 'OFF'}`}>
+                  <Grid3X3 className="w-3 h-3" />
                 </button>
               </div>
 
               {/* Ribbon rows */}
-              <div className="p-5">
-                <div className="space-y-6">
+              <div className="bg-white rounded-lg border border-zinc-200 p-6">
+                <div className="space-y-5">
                 {rows.map((row, ri) => (
                   <div key={row.id} className="group/row">
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[11px] font-semibold text-zinc-600 select-none">{row.name}</span>
-                        <span className="text-[10px] text-zinc-300 select-none bg-zinc-100 px-1.5 py-0.5 rounded-full tabular-nums">
-                          {row.cells.length}c &middot; {row.cells.reduce((s, c) => s + c.width, 0).toFixed(1)}%
-                        </span>
-                      </div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-semibold text-zinc-500 select-none">{row.name}</span>
+                      <span className="text-[9px] text-zinc-300 select-none">{row.cells.length}c &middot; {row.cells.reduce((s, c) => s + c.width, 0).toFixed(1)}%</span>
                       <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
                         <button onClick={() => moveRow(row.id, -1)} disabled={ri === 0}
-                          className="p-1.5 rounded-md hover:bg-zinc-100 disabled:opacity-20 transition-colors"><ArrowUp className="w-3.5 h-3.5 text-zinc-400" /></button>
+                          className="p-1 rounded hover:bg-zinc-200 disabled:opacity-20"><ArrowUp className="w-3 h-3 text-zinc-400" /></button>
                         <button onClick={() => moveRow(row.id, 1)} disabled={ri === rows.length - 1}
-                          className="p-1.5 rounded-md hover:bg-zinc-100 disabled:opacity-20 transition-colors"><ArrowDown className="w-3.5 h-3.5 text-zinc-400" /></button>
+                          className="p-1 rounded hover:bg-zinc-200 disabled:opacity-20"><ArrowDown className="w-3 h-3 text-zinc-400" /></button>
                         {rows.length > 1 && (
                           <button onClick={() => removeRow(row.id)}
-                            className="p-1.5 rounded-md hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5 text-zinc-300 hover:text-red-400" /></button>
+                            className="p-1 rounded hover:bg-red-100"><Trash2 className="w-3 h-3 text-zinc-300 hover:text-red-400" /></button>
                         )}
                       </div>
                     </div>
@@ -856,8 +793,8 @@ export default function App() {
                       display: 'flex', width: '100%', alignItems: 'stretch',
                     }} data-row={row.id}>
                       {row.cells.length === 0 ? (
-                        <div className="py-3 text-center text-[11px] text-zinc-400 w-full">
-                          Empty row &mdash; use <kbd className="px-1 py-0.5 bg-zinc-100 rounded text-[10px] font-mono">Insert</kbd> from the toolbar
+                        <div className="py-3 text-center text-[10px] text-zinc-400">
+                          Empty &mdash; use Insert After from the toolbar to add cells
                         </div>
                       ) : (
                         row.cells.map((c, ci) => {
@@ -868,6 +805,7 @@ export default function App() {
 
                           return (
                             <React.Fragment key={c.id}>
+                              {/* Insertion zone before this cell */}
                               <div
                                 onDragOver={e => { e.preventDefault(); e.stopPropagation(); setBetweenDrop(`${row.id}-${ci}`); }}
                                 onDragLeave={() => setBetweenDrop(null)}
@@ -883,11 +821,10 @@ export default function App() {
                                   const k = e.dataTransfer.getData('text/field');
                                   if (k) setSelId(insertCellAt(row.id, ci, k));
                                 }}
-                                className={`${betweenDrop === `${row.id}-${ci}` ? 'w-[5pt] bg-blue-400 min-w-[5pt]' : 'w-0 min-w-0'}`}
-                                style={{ height: 16, flexShrink: 0, transition: 'width 0.1s' }}
+                                className={`${betweenDrop === `${row.id}-${ci}` ? 'w-[4pt] bg-blue-400 min-w-[4pt]' : 'w-0 min-w-0'}`}
+                                style={{ height: 16, flexShrink: 0 }}
                               />
-
-                              <div className="relative group/cell" style={{ flex: `0 0 ${c.width}%`, minWidth: 0 }}
+                               <div className="relative group/cell" style={{ flex: `0 0 ${c.width}%`, minWidth: 0 }}
                                ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}>
                               <div
                                 onClick={() => setSelId(c.id)}
@@ -897,6 +834,7 @@ export default function App() {
                                 onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); setCellDrag({ rowId: row.id, cellId: c.id }); }}
                                 onDragEnd={() => { setCellDrag(null); setCellDropTarget(null); }}
                                 onDragOver={e => {
+                                  // field drop (from palette) or cell drop (from another cell)
                                   if (cellDrag && cellDrag.cellId !== c.id) {
                                     e.preventDefault();
                                     setCellDropTarget(c.id);
@@ -920,18 +858,17 @@ export default function App() {
                                     setDropHover(null);
                                   }
                                 }}
-                                className="relative cursor-pointer select-none"
+                                className="relative cursor-pointer select-none transition-colors"
                                 style={{
-                                  padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
+                                  padding: ri === 0 ? '3pt 4pt' : '0 4pt 3pt 4pt',
                                   verticalAlign: 'middle',
                                   borderRight: ci < row.cells.length - 1 ? '1px solid #000' : 'none',
                                   borderBottom: '1px solid #000',
                                   borderLeft: cellDropTarget === c.id ? '3px solid #3b82f6' : 'none',
                                   outline: isSel ? '2px solid #3b82f6' : dropHover === c.id && !cellDrag ? '2px dashed #3b82f6' : 'none',
-                                  outlineOffset: -2,
-                                  background: cellDropTarget === c.id ? 'rgba(59,130,246,0.08)' : dropHover === c.id && !cellDrag ? 'rgba(59,130,246,0.06)' : isSel ? 'rgba(59,130,246,0.04)' : 'transparent',
-                                  minHeight: 18,
-                                  transition: 'background 0.1s, border-color 0.1s',
+                                  outlineOffset: -1,
+                                  background: cellDropTarget === c.id ? 'rgba(59,130,246,0.08)' : dropHover === c.id && !cellDrag ? 'rgba(59,130,246,0.1)' : isSel ? 'rgba(59,130,246,0.06)' : 'transparent',
+                                  minHeight: 16,
                                 }}
                               >
                                 <div style={{
@@ -939,7 +876,7 @@ export default function App() {
                                   fontSize: '8pt', lineHeight: 1.1,
                                   fontWeight: c.field === 'sceneNumber' ? 700 : 500,
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
-                                  color: assigned ? undefined : '#c4c4c4',
+                                  color: assigned ? undefined : '#d4d4d8',
                                   overflow: c.wrap ? 'visible' : 'hidden',
                                 }}>
                                   {(align === 'center' || align === 'right') && <span style={{ flex: '1 1 0' }} />}
@@ -955,17 +892,19 @@ export default function App() {
                                 </div>
                               </div>
 
+                              {/* Resize handle */}
                               <div
                                 onMouseDown={e => { e.preventDefault(); e.stopPropagation(); if (ci < row.cells.length - 1) { const leftSum = row.cells.slice(0, ci).reduce((s, c2) => s + c2.width, 0); const rightCells = row.cells.slice(ci + 1); const rightSum = rightCells.reduce((s, c2) => s + c2.width, 0); setResizing({ rowId: row.id, ci, sx: e.clientX, a: c.width, b: row.cells[ci+1].width, leftSum, rightSum, n: rightCells.length }); } }}
-                                className="absolute right-0 top-0 bottom-0 w-[7px] cursor-col-resize z-10 group/h"
+                                className="absolute right-0 top-0 bottom-0 w-[6px] cursor-col-resize z-10 group/h"
                               >
-                                <div className="absolute right-0 top-1.5 bottom-1.5 w-[2px] bg-zinc-200 group-hover/h:bg-blue-400 group-active/h:bg-blue-500 transition-colors rounded-full" />
+                                <div className="absolute right-0 top-1 bottom-1 w-[2px] bg-zinc-200 group-hover/h:bg-blue-400 transition-colors rounded-full" />
                               </div>
                             </div>
                             </React.Fragment>
                           );
                         })
                       )}
+                      {/* + cell at end */}
                       <button
                         onClick={() => setSelId(addCell(row.id, row.cells.length - 1))}
                         onDragOver={e => { e.preventDefault(); if (cellDrag) setCellDropTarget('end-' + row.id); else setDropHover(row.id); }}
@@ -988,149 +927,128 @@ export default function App() {
                           if (k) setSelId(insertCellAt(row.id, row.cells.length, k));
                           else setSelId(addCell(row.id, row.cells.length - 1));
                         }}
-                        className={`flex items-center justify-center cursor-pointer transition-colors ${
-                          dropHover === row.id || cellDropTarget === 'end-' + row.id
-                            ? 'bg-blue-100'
-                            : 'hover:bg-zinc-50'
-                        }`}
+                        className={`flex items-center justify-center cursor-pointer transition-colors ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
                           flexShrink: 0, width: '48px',
                           borderBottom: '1px solid #000',
-                          borderLeft: '1px solid rgba(0,0,0,0.08)',
+                          borderLeft: '1px solid rgba(0,0,0,0.10)',
                         }}
-                      >
-                        <Plus className={`w-3.5 h-3.5 ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? 'text-blue-500' : 'text-zinc-300 group-hover/row:text-zinc-500'}`} />
-                      </button>
+                      ><Plus className={`w-3 h-3 ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? 'text-blue-500' : 'text-zinc-400'}`} /></button>
 
                     </div>
                   </div>
                 ))}
               </div>
 
-              <button onClick={addRow}
-                className="mt-5 w-full py-3 text-[11px] font-medium rounded-xl border-2 border-dashed border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 hover:bg-zinc-50 transition-all flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4" /> Add Row
+              <button onClick={addRow} className="mt-5 w-full py-2.5 text-[10px] font-medium rounded-lg border-2 border-dashed border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 hover:bg-zinc-50/50 transition-colors flex items-center justify-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Add Row
               </button>
               </div>
             </section>
 
             {/* ══ Live Preview ══ */}
-            <section className="bg-white rounded-xl border border-zinc-200/80 shadow-sm overflow-hidden">
-              <div className="flex items-center gap-2.5 px-5 py-3 border-b border-zinc-100">
-                <div className="w-6 h-6 rounded-md bg-zinc-100 flex items-center justify-center">
-                  <Eye className="w-3.5 h-3.5 text-zinc-500" />
-                </div>
-                <span className="text-xs font-semibold text-zinc-700">Live Preview</span>
-                <span className="ml-auto text-[10px] font-medium text-zinc-400 bg-zinc-100 px-2 py-0.5 rounded-full">Sample data</span>
+            <section className="bg-white rounded-lg border border-zinc-200 p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <Eye className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Preview</span>
+                <span className="ml-auto text-[9px] text-zinc-400">Sample data</span>
               </div>
 
-              <div className="p-5">
-                <div className="inline-block" style={{
-                  fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
-                  border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
-                  width: '100%',
-                }}>
-                  {rows.map((row, ri) => (
-                    <div key={row.id} style={{
-                      display: 'flex',
-                      borderBottom: showGrid && ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
-                    }}>
-                      {row.cells.map((c, ci) => {
-                        const align = getAlign(c);
-                        const val = c.field === 'text' ? (c.textContent || '') : c.field ? (cellValue(c.field) || '\u00A0') : '\u00A0';
-                        return (
-                          <div key={c.id} style={{
-                            flex: `0 0 ${c.width}%`, minWidth: 0, textAlign: align,
-                            padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
-                            verticalAlign: 'middle',
-                            borderRight: ci < row.cells.length - 1 ? (showGrid ? '1px solid rgba(0,0,0,0.12)' : `1px solid ${STYLE.bg}`) : 'none',
-                            overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
-                            fontSize: '8pt', lineHeight: 1.1,
-                            fontWeight: c.field === 'sceneNumber' ? 700 : 400,
-                            textTransform: c.field === 'set' ? 'uppercase' : 'none',
-                          }}>
-                            <div style={{ display: 'flex' }}>
-                              {(align === 'center' || align === 'right') && <span style={{ flex: '1 1 0' }} />}
-                              {c.prefix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{c.prefix}{'\u00A0'}</span>}
-                              <span style={{
-                                flexShrink: 1, minWidth: 0,
-                                overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
-                                textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
-                                whiteSpace: c.wrap ? 'normal' : 'nowrap',
-                                wordBreak: c.wrap ? 'break-word' : undefined,
-                              }}>{val}{c.suffix ? '\u00A0' + c.suffix : ''}</span>
-                              {(align === 'left' || align === 'center') && ci < row.cells.length - 1 && <span style={{ flex: '1 1 0' }} />}
-                            </div>
+              <div className="inline-block" style={{
+                fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
+                border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
+                width: '100%',
+              }}>
+                {rows.map((row, ri) => (
+                  <div key={row.id} style={{
+                    display: 'flex',
+                    borderBottom: showGrid && ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
+                  }}>
+                    {row.cells.map((c, ci) => {
+                      const align = getAlign(c);
+                      const val = c.field === 'text' ? (c.textContent || '') : c.field ? (cellValue(c.field) || '\u00A0') : '\u00A0';
+                      return (
+                        <div key={c.id} style={{
+                          flex: `0 0 ${c.width}%`, minWidth: 0, textAlign: align,
+                          padding: ri === 0 ? '3pt 4pt' : '0 4pt 3pt 4pt',
+                          verticalAlign: 'middle',
+                          borderRight: ci < row.cells.length - 1 ? (showGrid ? '1px solid rgba(0,0,0,0.12)' : `1px solid ${STYLE.bg}`) : 'none',
+                          overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                          fontSize: '8pt', lineHeight: 1.1,
+                          fontWeight: c.field === 'sceneNumber' ? 700 : 400,
+                          textTransform: c.field === 'set' ? 'uppercase' : 'none',
+                        }}>
+                          <div style={{ display: 'flex' }}>
+                            {(align === 'center' || align === 'right') && <span style={{ flex: '1 1 0' }} />}
+                            {c.prefix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{c.prefix}{'\u00A0'}</span>}
+                            <span style={{
+                              flexShrink: 1, minWidth: 0,
+                              overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                              textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
+                              whiteSpace: c.wrap ? 'normal' : 'nowrap',
+                              wordBreak: c.wrap ? 'break-word' : undefined,
+                            }}>{val}{c.suffix ? '\u00A0' + c.suffix : ''}</span>
+                            {(align === 'left' || align === 'center') && ci < row.cells.length - 1 && <span style={{ flex: '1 1 0' }} />}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
               </div>
             </section>
           </div>
         </div>
       </div>
-
       {/* ── Floating Change dropdown ── */}
       {changeOpen && selCell && (() => {
-        const PW = 230;
-        const PH = 380;
+        const PW = 200;
+        const PH = 340;
         const px = Math.max(4, Math.min(dropdownPos.x, window.innerWidth - PW - 4));
         const py = dropdownPos.y + PH > window.innerHeight ? Math.max(4, dropdownPos.y - PH - 8) : Math.min(dropdownPos.y, window.innerHeight - PH - 4);
         return (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setChangeOpen(false)} />
-            <div className="fixed z-50 bg-white border border-zinc-200 rounded-xl shadow-2xl py-1.5 overflow-y-auto"
-              style={{ left: px, top: py, minWidth: PW, maxWidth: 260, maxHeight: PH }}>
-              <div className="px-3 pb-1 mb-1 border-b border-zinc-100">
-                <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Change field</span>
-              </div>
+            <div className="fixed z-50 bg-white border border-zinc-200 rounded-lg shadow-xl py-1 overflow-y-auto"
+              style={{ left: px, top: py, minWidth: PW, maxWidth: 240, maxHeight: PH }}>
               {ALL_FIELDS.filter(f => !used.has(f.key) || f.key === selCell.cell.field).map(f => {
                 const Icon = f.icon;
-                const color = CATEGORY_COLORS[f.category] || 'text-zinc-500';
                 return (
                   <button key={f.key}
                     onClick={() => { assign(selId!, f.key); setChangeOpen(false); }}
-                    className={`w-full text-left px-3 py-2 text-[11px] hover:bg-zinc-50 flex items-center gap-2.5 transition-colors ${
-                      f.key === selCell.cell.field ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'
-                    }`}>
-                    <Icon className={`w-3.5 h-3.5 shrink-0 ${f.key === selCell.cell.field ? 'text-blue-500' : color}`} />
-                    <span className="flex-1">{f.label}</span>
-                    {f.key === selCell.cell.field && <Check className="w-3 h-3 text-blue-500 shrink-0" />}
-                    <span className="text-[9px] text-zinc-300 tabular-nums font-mono">{f.defaultWidth}%</span>
+                    className={`w-full text-left px-2.5 py-1.5 text-[10px] hover:bg-zinc-50 flex items-center gap-2 ${f.key === selCell.cell.field ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                    <Icon className="w-3 h-3" /> {f.label}
                   </button>
                 );
               })}
               {selCell.cell.field === 'text' && (
-                <div className="px-3 py-2 border-t border-zinc-100 mt-1">
+                <div className="px-2 py-1 border-t border-zinc-100">
                   <textarea
                     value={selCell.cell.textContent || ''}
                     onChange={e => { e.stopPropagation(); setTextContent(selId!, e.target.value); }}
                     placeholder="Type text..."
-                    className="w-full px-2 py-1.5 text-[11px] rounded-lg border border-zinc-200 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-zinc-50 resize-none"
+                    className="w-full px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50 resize-none"
                     rows={2}
                     onClick={e => e.stopPropagation()}
                   />
                 </div>
               )}
               {selCell.cell.field && selCell.cell.field !== 'text' && (
-                <div className="px-3 py-2 border-t border-zinc-100 mt-1">
-                  <div className="flex items-center gap-1.5">
+                <div className="px-2 py-1 border-t border-zinc-100">
+                  <div className="flex items-center gap-1">
                     <input
                       value={selCell.cell.prefix || ''}
                       onChange={e => { e.stopPropagation(); setAffix(selId!, 'prefix', e.target.value); }}
                       placeholder="Prefix..."
-                      className="flex-1 min-w-0 px-2 py-1.5 text-[11px] rounded-lg border border-zinc-200 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-zinc-50"
+                      className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
                       onClick={e => e.stopPropagation()}
                     />
-                    <span className="text-[10px] text-zinc-300 shrink-0">&gt;</span>
+                    <span className="text-[8px] text-zinc-300 shrink-0">&gt;</span>
                     <input
                       value={selCell.cell.suffix || ''}
                       onChange={e => { e.stopPropagation(); setAffix(selId!, 'suffix', e.target.value); }}
                       placeholder="Suffix..."
-                      className="flex-1 min-w-0 px-2 py-1.5 text-[11px] rounded-lg border border-zinc-200 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-zinc-50"
+                      className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
                       onClick={e => e.stopPropagation()}
                     />
                   </div>
@@ -1138,14 +1056,14 @@ export default function App() {
               )}
               {selCell.cell.field && (
                 <button onClick={() => { clearCell(selId!); setChangeOpen(false); }}
-                  className="w-full text-left px-3 py-2 text-[11px] text-red-500 hover:bg-red-50 flex items-center gap-2.5 border-t border-zinc-100 mt-1 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" /> Remove field
+                  className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2 border-t border-zinc-100 pt-1.5">
+                  <Trash2 className="w-3 h-3" /> Remove field
                 </button>
               )}
               {selCell.row.cells.length > 1 && (
                 <button onClick={() => { removeCell(selCell.row.id, selCell.ci); setChangeOpen(false); }}
-                  className="w-full text-left px-3 py-2 text-[11px] text-red-500 hover:bg-red-50 flex items-center gap-2.5 transition-colors">
-                  <Trash2 className="w-3.5 h-3.5" /> Delete cell
+                  className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2">
+                  <Trash2 className="w-3 h-3" /> Delete cell
                 </button>
               )}
             </div>
