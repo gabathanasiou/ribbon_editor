@@ -11,7 +11,7 @@ import {
 
 /* ── Types & Data ─────────────────────────────────── */
 
-interface FieldDef { key: string; label: string; defaultWidth: number; align: 'left' | 'center' | 'right'; icon: React.ElementType; category: string; }
+interface FieldDef { key: string; label: string; defaultWidth: number; align: 'left' | 'center' | 'right'; icon: React.ElementType; category: string; defaultSuffix?: string; }
 interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; wrap?: boolean; prefix?: string; suffix?: string; textContent?: string; }
 interface RowConfig { id: string; name: string; cells: ColCell[]; }
 interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
@@ -24,7 +24,7 @@ const ALL_FIELDS: FieldDef[] = [
   { key: 'set',         label: 'Set',        defaultWidth: 120,align: 'left',   icon: Building2,   category: 'Shooting' },
   { key: 'dayNight',    label: 'D/N',        defaultWidth: 40, align: 'left',   icon: Sun,         category: 'Shooting' },
   { key: 'cast',        label: 'Cast',       defaultWidth: 56, align: 'left',   icon: Users,       category: 'Cast & Talent' },
-  { key: 'pages',       label: 'Pages',      defaultWidth: 34, align: 'center', icon: FileText,    category: 'Scene Info' },
+  { key: 'pages',       label: 'Pages',      defaultWidth: 34, align: 'center', icon: FileText,    category: 'Scene Info', defaultSuffix: 'pgs' },
   { key: 'description', label: 'Synopsis',   defaultWidth: 284,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
   { key: 'scriptDay',   label: 'Script Day', defaultWidth: 40, align: 'center', icon: Calendar,    category: 'Production' },
   { key: 'location',    label: 'Location',   defaultWidth: 80, align: 'left',   icon: MapPin,      category: 'Production' },
@@ -77,7 +77,10 @@ function formatDuration(minutes: number): string {
 function cid() { return `c${Math.random().toString(36).slice(2, 7)}`; }
 
 function mkRow(name: string, keys: string[]): RowConfig {
-  return { id: cid(), name, cells: keys.map(k => ({ id: cid(), field: k, width: FIELD_MAP[k]?.defaultWidth || 60 })) };
+  return { id: cid(), name, cells: keys.map(k => {
+    const f = FIELD_MAP[k];
+    return { id: cid(), field: k, width: f?.defaultWidth || 60, suffix: f?.defaultSuffix };
+  }) };
 }
 
 const DEFAULT_ROWS = (): RowConfig[] => [
@@ -88,7 +91,7 @@ const DEFAULT_ROWS = (): RowConfig[] => [
 function cellValue(field: string): string {
   if (!field) return '';
   const v = SAMPLE[field] || '';
-  if (field === 'pages') return v ? `${v} pgs` : '';
+  if (field === 'pages') return v || '';
   if (field === 'duration') return v ? formatDuration(Number(v)) : '';
   if (field === 'intExt') return INT_EXT[v] || v;
   if (field === 'dayNight') return DAY_NIGHT[v] || v;
@@ -258,10 +261,13 @@ export default function App() {
   /* actions */
 
   const assign = useCallback((cellId: string, key: string) => {
-    const dw = FIELD_MAP[key]?.defaultWidth;
+    const f = FIELD_MAP[key];
+    const dw = f?.defaultWidth;
+    const ds = f?.defaultSuffix;
     commit(rows.map(r => ({
       ...r, cells: r.cells.map(c => c.id === cellId ? {
         ...c, field: key, ...(dw ? { width: dw } : {}),
+        suffix: ds,
         ...(key !== 'text' ? { textContent: undefined } : {}),
       } : c),
     })));
@@ -393,6 +399,8 @@ export default function App() {
 
   const selIdRef = useRef(selId);
   selIdRef.current = selId;
+  const changeOpenRef = useRef(changeOpen);
+  changeOpenRef.current = changeOpen;
   const rowsRef = useRef(rows);
   rowsRef.current = rows;
   const actRef = useRef({ clearCell, undo, redo });
@@ -402,7 +410,7 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       const { clearCell: clear, undo: un, redo: rd } = actRef.current;
       const rows = rowsRef.current;
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selIdRef.current) { e.preventDefault(); clear(selIdRef.current); return; }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selIdRef.current && !changeOpenRef.current) { e.preventDefault(); clear(selIdRef.current); return; }
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         if (!selIdRef.current) return;
         e.preventDefault();
@@ -785,7 +793,8 @@ export default function App() {
                           e.preventDefault();
                           setDropHover(null);
                           const k = e.dataTransfer.getData('text/field');
-                          if (k) commit(rows.map(r => r.id !== row.id ? r : { ...r, cells: [...r.cells, { id: cid(), field: k, width: FIELD_MAP[k]?.defaultWidth || 80 }] }));
+                          const f = FIELD_MAP[k];
+                          if (k) commit(rows.map(r => r.id !== row.id ? r : { ...r, cells: [...r.cells, { id: cid(), field: k, width: f?.defaultWidth || 80, suffix: f?.defaultSuffix }] }));
                           else addCell(row.id, row.cells.length - 1);
                         }}
                         className={`inline-block align-top cursor-pointer transition-colors ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
