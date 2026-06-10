@@ -4,7 +4,7 @@ import {
   Calendar, StickyNote, UserPlus, Sparkles, Car, Package, Shirt, Scissors,
   Volume1, Video, Volume2, Music, PawPrint, Sword, Leaf, PaintBucket,
   Plus, Trash2, GripHorizontal,
-  ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
+  Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
   AlignCenter, AlignRight, WrapText, Grid3X3, Type,
   Download, Upload,
@@ -629,11 +629,11 @@ export default function App() {
       {/* ══ Body ══ */}
       <div className="flex-1 flex overflow-hidden">
         {/* ── Left: Palette ── */}
-        <aside className="w-[240px] shrink-0 bg-white border-r border-zinc-200 overflow-y-auto">
-          <div className="p-4">
-            <div className="flex items-center gap-1.5 mb-4">
+        <aside className="w-[170px] shrink-0 bg-white border-r border-zinc-200 overflow-y-auto">
+          <div className="p-3">
+            <div className="flex items-center gap-1.5 mb-3">
               <Eye className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Fields</span>
+              <span className="text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">Fields</span>
               <span className="ml-auto text-[10px] tabular-nums text-zinc-400">{placed}/{total}</span>
             </div>
 
@@ -641,10 +641,9 @@ export default function App() {
               const items = ALL_FIELDS.filter(f => f.category === cat);
               const catUsed = items.filter(f => used.has(f.key)).length;
               return (
-                <div key={cat} className="mb-4">
-                  <div className="flex items-center gap-1 mb-1.5 text-left">
-                    <ChevronRight className="w-3 h-3 text-zinc-300" />
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{cat}</span>
+                <div key={cat} className="mb-3">
+                  <div className="flex items-center gap-1 mb-1 text-left">
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-wide truncate">{cat}</span>
                     <span className="ml-auto text-[9px] text-zinc-300">{catUsed}/{items.length}</span>
                   </div>
                   <div className="space-y-0.5">
@@ -657,18 +656,18 @@ export default function App() {
                           onClick={() => { if (selId) assign(selId, f.key); }}
                           draggable
                           onDragStart={e => e.dataTransfer.setData('text/field', f.key)}
-                          className={`w-full text-left px-2.5 py-1.5 rounded-md transition-colors flex items-center gap-2 group ${
+                          className={`w-full text-left px-2 py-1 rounded transition-colors flex items-center gap-1.5 group ${
                             inUse
                               ? 'bg-blue-50 ring-1 ring-inset ring-blue-200/60 text-blue-700 hover:bg-blue-100'
                               : 'bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700'
                           }`}
                         >
-                          <Icon className={`w-3.5 h-3.5 shrink-0 ${inUse ? 'text-blue-400' : 'text-zinc-300'}`} />
-                          <span className="text-[11px] truncate">{f.label}</span>
+                          <Icon className={`w-3 h-3 shrink-0 ${inUse ? 'text-blue-400' : 'text-zinc-300'}`} />
+                          <span className="text-[10px] truncate">{f.label}</span>
                           {inUse ? (
                             <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
                           ) : (
-                            <GripHorizontal className="w-3 h-3 text-zinc-200 ml-auto opacity-0 group-hover:opacity-100 shrink-0" />
+                            <GripHorizontal className="w-2.5 h-2.5 text-zinc-200 ml-auto opacity-0 group-hover:opacity-100 shrink-0" />
                           )}
                         </button>
                       );
@@ -681,7 +680,7 @@ export default function App() {
         </aside>
 
         {/* ── Canvas ── */}
-        <div className="flex-1 overflow-auto bg-zinc-100/70 p-6">
+        <div className="flex-1 overflow-auto bg-zinc-100/70 p-8">
           <div className="max-w-[960px] mx-auto space-y-10">
 
             {/* ══ Designer ══ */}
