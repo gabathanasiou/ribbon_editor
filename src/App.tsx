@@ -698,7 +698,7 @@ export default function App() {
           <div className="max-w-[960px] mx-auto space-y-6">
 
             {/* ══ Designer ══ */}
-            <section className="bg-white rounded-lg border border-zinc-200 p-6">
+            <section>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Designer</span>
               </div>
@@ -764,7 +764,8 @@ export default function App() {
               </div>
 
               {/* Ribbon rows */}
-              <div className="space-y-5">
+              <div className="bg-white rounded-lg border border-zinc-200 p-6 pr-10">
+                <div className="space-y-5">
                 {rows.map((row, ri) => (
                   <div key={row.id} className="group/row">
                     <div className="flex items-center gap-2 mb-1">
@@ -925,7 +926,7 @@ export default function App() {
                           if (k) setSelId(insertCellAt(row.id, row.cells.length, k));
                           else setSelId(addCell(row.id, row.cells.length - 1));
                         }}
-                        className={`absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer transition-colors z-20 ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
+                        className={`absolute -right-8 top-1/2 -translate-y-1/2 cursor-pointer transition-colors z-20 ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
                           minHeight: 16, minWidth: '28pt',
                           border: `2px dashed ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? '#3b82f6' : '#d4d4d8'}`,
@@ -941,6 +942,7 @@ export default function App() {
               <button onClick={addRow} className="mt-5 w-full py-2.5 text-[10px] font-medium rounded-lg border-2 border-dashed border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 hover:bg-zinc-50/50 transition-colors flex items-center justify-center gap-1.5">
                 <Plus className="w-3.5 h-3.5" /> Add Row
               </button>
+              </div>
             </section>
 
             {/* ══ Live Preview ══ */}
