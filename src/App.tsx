@@ -17,6 +17,9 @@ interface RowConfig { id: string; name: string; cells: ColCell[]; }
 interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
 
 const ALL_FIELDS: FieldDef[] = [
+  // Built-in fields. To add custom fields at runtime, push to this array:
+  //   ALL_FIELDS.push({ key: 'custom_x', label: 'My Field', defaultWidth: 60, align: 'left', icon: Circle, category: 'Custom' });
+  // The palette, assignment logic, and preview all operate on ALL_FIELDS dynamically.
   { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 15, align: 'center', icon: Hash,        category: 'Scene Info' },
   { key: 'callTime',    label: 'Call Time',  defaultWidth: 30, align: 'center', icon: Clock,       category: 'Shooting' },
   { key: 'duration',    label: 'Duration',   defaultWidth: 30, align: 'center', icon: Timer,       category: 'Shooting' },
@@ -302,23 +305,27 @@ export default function App() {
     setSelId(null);
   }, [rows, commit]);
 
-  const addCell = useCallback((rowId: string, after: number) => {
+  const addCell = useCallback((rowId: string, after: number): string => {
+    const newId = cid();
     commit(rows.map(r => {
       if (r.id !== rowId) return r;
       const nc = [...r.cells];
-      nc.splice(after + 1, 0, { id: cid(), field: '', width: 80 });
+      nc.splice(after + 1, 0, { id: newId, field: '', width: 80 });
       return { ...r, cells: nc };
     }));
+    return newId;
   }, [rows, commit]);
 
-  const insertCellAt = useCallback((rowId: string, ci: number, fieldKey?: string) => {
+  const insertCellAt = useCallback((rowId: string, ci: number, fieldKey?: string): string => {
+    const newId = cid();
     const f = fieldKey ? FIELD_MAP[fieldKey] : null;
     commit(rows.map(r => {
       if (r.id !== rowId) return r;
       const nc = [...r.cells];
-      nc.splice(ci, 0, { id: cid(), field: fieldKey || '', width: f?.defaultWidth || 80, suffix: f?.defaultSuffix });
+      nc.splice(ci, 0, { id: newId, field: fieldKey || '', width: f?.defaultWidth || 80, suffix: f?.defaultSuffix });
       return { ...r, cells: nc };
     }));
+    return newId;
   }, [rows, commit]);
 
   const setAlign = useCallback((cellId: string, align: 'left' | 'center' | 'right' | undefined) => {
@@ -620,7 +627,7 @@ export default function App() {
                 <button onClick={() => selCell && removeCell(selCell.row.id, selCell.ci)} disabled={!selCell || (selCell ? selCell.row.cells.length <= 1 : true)} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5">
                   <Trash2 className="w-3 h-3" /> Delete Cell
                 </button>
-                <button onClick={() => selCell && addCell(selCell.row.id, selCell.ci)} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Insert cell after selected">
+                <button onClick={() => selCell && setSelId(addCell(selCell.row.id, selCell.ci))} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Insert cell after selected">
                   <Plus className="w-3 h-3" /> Insert After
                 </button>
                 <div className="w-px h-4 bg-zinc-200 mx-1" />
@@ -714,7 +721,7 @@ export default function App() {
                                     return;
                                   }
                                   const k = e.dataTransfer.getData('text/field');
-                                  if (k) insertCellAt(row.id, ci, k);
+                                  if (k) setSelId(insertCellAt(row.id, ci, k));
                                 }}
                                 className={`inline-block align-top ${betweenDrop === `${row.id}-${ci}` ? 'w-[4pt] bg-blue-400 min-w-[4pt]' : ''}`}
                                 style={{ height: 16 }}
@@ -796,7 +803,7 @@ export default function App() {
 
                       {/* Dropzone — add cell at end */}
                       <button
-                        onClick={() => addCell(row.id, row.cells.length - 1)}
+                        onClick={() => setSelId(addCell(row.id, row.cells.length - 1))}
                         onDragOver={e => { e.preventDefault(); if (cellDrag) setCellDropTarget('end-' + row.id); else setDropHover(row.id); }}
                         onDragLeave={() => { setCellDropTarget(null); setDropHover(null); }}
                         onDrop={e => {
@@ -814,8 +821,8 @@ export default function App() {
                           }
                           const k = e.dataTransfer.getData('text/field');
                           const f = FIELD_MAP[k];
-                          if (k) commit(rows.map(r => r.id !== row.id ? r : { ...r, cells: [...r.cells, { id: cid(), field: k, width: f?.defaultWidth || 80, suffix: f?.defaultSuffix }] }));
-                          else addCell(row.id, row.cells.length - 1);
+                          if (k) setSelId(insertCellAt(row.id, row.cells.length, k));
+                          else setSelId(addCell(row.id, row.cells.length - 1));
                         }}
                         className={`inline-block align-top cursor-pointer transition-colors ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
