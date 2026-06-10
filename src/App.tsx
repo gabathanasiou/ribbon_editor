@@ -179,6 +179,8 @@ export default function App() {
   const [dropdownPos, setDropdownPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(false);
   const [dropHover, setDropHover] = useState<string | null>(null);
+  const [cellDrag, setCellDrag]   = useState<{ rowId: string; cellId: string } | null>(null);
+  const [cellDropTarget, setCellDropTarget] = useState<string | null>(null);
   const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
@@ -330,6 +332,31 @@ export default function App() {
     commit(rows.map(r => ({
       ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, textContent: text || undefined } : c),
     })));
+  }, [rows, commit]);
+
+  const moveCellToRow = useCallback((srcRowId: string, srcCi: number, tgtRowId: string, tgtCi: number) => {
+    if (srcRowId === tgtRowId && srcCi === tgtCi) return;
+    const srcRow = rows.find(r => r.id === srcRowId);
+    if (!srcRow) return;
+    const cell = { ...srcRow.cells[srcCi] };
+    commit(rows.map(r => {
+      if (r.id === srcRowId && r.id === tgtRowId) {
+        // same row
+        const nc = r.cells.filter((_, i) => i !== srcCi);
+        const insertAt = tgtCi > srcCi ? tgtCi - 1 : tgtCi;
+        nc.splice(insertAt, 0, cell);
+        return { ...r, cells: nc };
+      }
+      if (r.id === srcRowId) {
+        return { ...r, cells: r.cells.filter((_, i) => i !== srcCi) };
+      }
+      if (r.id === tgtRowId) {
+        const nc = [...r.cells];
+        nc.splice(tgtCi, 0, cell);
+        return { ...r, cells: nc };
+      }
+      return r;
+    }));
   }, [rows, commit]);
 
   const moveCell = useCallback((rowId: string, ci: number, dir: -1 | 1) => {
@@ -692,23 +719,50 @@ export default function App() {
 
                           return (
                             <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}
-                              ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}>
+                              ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}
+                            >
                               <div
                                 onClick={() => setSelId(c.id)}
                                 onDoubleClick={(e) => { setSelId(c.id); openMenu(e); }}
                                 onContextMenu={e => { e.preventDefault(); setSelId(c.id); openMenu(e); }}
-                                onDragOver={e => { e.preventDefault(); setDropHover(c.id); }}
-                                onDragLeave={() => setDropHover(null)}
-                                onDrop={e => { e.preventDefault(); setDropHover(null); const k = e.dataTransfer.getData('text/field'); if (k) assign(c.id, k); }}
+                                draggable
+                                onDragStart={e => { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', ''); setCellDrag({ rowId: row.id, cellId: c.id }); }}
+                                onDragEnd={() => { setCellDrag(null); setCellDropTarget(null); }}
+                                onDragOver={e => {
+                                  // field drop (from palette) or cell drop (from another cell)
+                                  if (cellDrag && cellDrag.cellId !== c.id) {
+                                    e.preventDefault();
+                                    setCellDropTarget(c.id);
+                                    e.dataTransfer.dropEffect = 'move';
+                                  } else if (!cellDrag) {
+                                    e.preventDefault();
+                                    setDropHover(c.id);
+                                  }
+                                }}
+                                onDragLeave={() => { setCellDropTarget(null); setDropHover(null); }}
+                                onDrop={e => {
+                                  e.preventDefault();
+                                  if (cellDrag) {
+                                    const src = rows.find(r => r.id === cellDrag.rowId);
+                                    const sci = src?.cells.findIndex(cc => cc.id === cellDrag.cellId);
+                                    if (sci != null && sci >= 0) moveCellToRow(cellDrag.rowId, sci, row.id, ci);
+                                    setCellDrag(null); setCellDropTarget(null);
+                                  } else {
+                                    const k = e.dataTransfer.getData('text/field');
+                                    if (k) assign(c.id, k);
+                                    setDropHover(null);
+                                  }
+                                }}
                                 className="relative cursor-pointer select-none transition-colors"
                                 style={{
                                   padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                                   verticalAlign: ri === 0 ? 'top' : 'middle',
                                   borderRight: ci < row.cells.length - 1 ? '1px solid #000' : 'none',
                                   borderBottom: '1px solid #000',
-                                  outline: isSel ? '2px solid #3b82f6' : dropHover === c.id ? '2px dashed #3b82f6' : 'none',
+                                  borderLeft: cellDropTarget === c.id ? '3px solid #3b82f6' : 'none',
+                                  outline: isSel ? '2px solid #3b82f6' : dropHover === c.id && !cellDrag ? '2px dashed #3b82f6' : 'none',
                                   outlineOffset: -1,
-                                  background: dropHover === c.id ? 'rgba(59,130,246,0.1)' : isSel ? 'rgba(59,130,246,0.06)' : 'transparent',
+                                  background: cellDropTarget === c.id ? 'rgba(59,130,246,0.08)' : dropHover === c.id && !cellDrag ? 'rgba(59,130,246,0.1)' : isSel ? 'rgba(59,130,246,0.06)' : 'transparent',
                                   minHeight: 16,
                                 }}
                               >
@@ -741,25 +795,35 @@ export default function App() {
                       {/* Dropzone — add cell at end */}
                       <button
                         onClick={() => addCell(row.id, row.cells.length - 1)}
-                        onDragOver={e => { e.preventDefault(); setDropHover(row.id); }}
-                        onDragLeave={() => setDropHover(null)}
+                        onDragOver={e => { e.preventDefault(); if (cellDrag) setCellDropTarget('end-' + row.id); else setDropHover(row.id); }}
+                        onDragLeave={() => { setCellDropTarget(null); setDropHover(null); }}
                         onDrop={e => {
                           e.preventDefault();
-                          setDropHover(null);
+                          setDropHover(null); setCellDropTarget(null);
+                          if (cellDrag) {
+                            const src = rows.find(r => r.id === cellDrag.rowId);
+                            const sci = src?.cells.findIndex(cc => cc.id === cellDrag.cellId);
+                            if (sci != null && sci >= 0) {
+                              const srcRow = rows.find(r => r.id === cellDrag.rowId);
+                              if (srcRow) moveCellToRow(cellDrag.rowId, sci, row.id, srcRow.id === row.id ? row.cells.length : row.cells.length);
+                            }
+                            setCellDrag(null);
+                            return;
+                          }
                           const k = e.dataTransfer.getData('text/field');
                           const f = FIELD_MAP[k];
                           if (k) commit(rows.map(r => r.id !== row.id ? r : { ...r, cells: [...r.cells, { id: cid(), field: k, width: f?.defaultWidth || 80, suffix: f?.defaultSuffix }] }));
                           else addCell(row.id, row.cells.length - 1);
                         }}
-                        className={`inline-block align-top cursor-pointer transition-colors ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
+                        className={`inline-block align-top cursor-pointer transition-colors ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
                           padding: ri === 0 ? '3pt 6pt' : '0 6pt 3pt 6pt',
                           verticalAlign: ri === 0 ? 'top' : 'middle',
                           borderBottom: '1px solid #000',
-                          borderLeft: `2px dashed ${dropHover === row.id ? '#3b82f6' : '#d4d4d8'}`,
+                          borderLeft: `2px dashed ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? '#3b82f6' : '#d4d4d8'}`,
                           minHeight: 16, minWidth: '40pt',
                         }}
-                      ><Plus className={`w-3 h-3 ${dropHover === row.id ? 'text-blue-500' : 'text-zinc-400'}`} /></button>
+                      ><Plus className={`w-3 h-3 ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? 'text-blue-500' : 'text-zinc-400'}`} /></button>
                     </div>
                   </div>
                 ))}
