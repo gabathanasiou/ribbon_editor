@@ -190,7 +190,7 @@ export default function App() {
 
   const { rows, commit, reset, undo, redo, liveMutate, replace, canUndo, canRedo } = useUndoableRows(loadInitialRows);
   const [selId, setSelId]      = useState<string | null>(null);
-  const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; a: number; b: number } | null>(null);
+  const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; a: number; b: number; leftSum: number; rightSum: number; n: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(true);
@@ -487,11 +487,25 @@ export default function App() {
       if (!rowEl) return;
       const pxW = rowEl.offsetWidth || 1;
       const deltaPct = ((e.clientX - resizing.sx) / pxW) * 100;
-      const newA = Math.max(MIN_PCT, Math.min(resizing.a + resizing.b - MIN_PCT, resizing.a + deltaPct));
-      const newB = resizing.a + resizing.b - newA;
+
       liveMutate(all => {
         for (const r of all) {
-          if (r.id === resizing.rowId && resizing.ci < r.cells.length - 1) {
+          if (r.id !== resizing.rowId || resizing.ci >= r.cells.length - 1) continue;
+
+          if (e.shiftKey) {
+            const newA = Math.max(MIN_PCT, Math.min(
+              resizing.a + resizing.rightSum - MIN_PCT * resizing.n,
+              resizing.a + deltaPct
+            ));
+            const remaining = resizing.rightSum + resizing.a - newA;
+            const scale = remaining / resizing.rightSum;
+            r.cells[resizing.ci].width = Math.round(newA * 100) / 100;
+            for (let i = resizing.ci + 1; i < r.cells.length; i++) {
+              r.cells[i].width = Math.max(MIN_PCT, Math.round(r.cells[i].width * scale * 100) / 100);
+            }
+          } else {
+            const newA = Math.max(MIN_PCT, Math.min(resizing.a + resizing.b - MIN_PCT, resizing.a + deltaPct));
+            const newB = resizing.a + resizing.b - newA;
             r.cells[resizing.ci].width = Math.round(newA * 100) / 100;
             r.cells[resizing.ci + 1].width = Math.round(newB * 100) / 100;
           }
@@ -876,7 +890,7 @@ export default function App() {
 
                               {/* Resize handle */}
                               <div
-                                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); if (ci < row.cells.length - 1) setResizing({ rowId: row.id, ci, sx: e.clientX, a: c.width, b: row.cells[ci+1].width }); }}
+                                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); if (ci < row.cells.length - 1) { const leftSum = row.cells.slice(0, ci).reduce((s, c2) => s + c2.width, 0); const rightCells = row.cells.slice(ci + 1); const rightSum = rightCells.reduce((s, c2) => s + c2.width, 0); setResizing({ rowId: row.id, ci, sx: e.clientX, a: c.width, b: row.cells[ci+1].width, leftSum, rightSum, n: rightCells.length }); } }}
                                 className="absolute right-0 top-0 bottom-0 w-[6px] cursor-col-resize z-10 group/h"
                               >
                                 <div className="absolute right-0 top-1 bottom-1 w-[2px] bg-zinc-200 group-hover/h:bg-blue-400 transition-colors rounded-full" />
