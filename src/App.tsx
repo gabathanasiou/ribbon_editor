@@ -12,7 +12,7 @@ import {
 /* ── Types & Data ─────────────────────────────────── */
 
 interface FieldDef { key: string; label: string; defaultWidth: number; align: 'left' | 'center' | 'right'; icon: React.ElementType; category: string; }
-interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; }
+interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; wrap?: boolean; }
 interface RowConfig { id: string; name: string; cells: ColCell[]; }
 
 const ALL_FIELDS: FieldDef[] = [
@@ -142,7 +142,6 @@ export default function App() {
   const [selId, setSelId]      = useState<string | null>(null);
   const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; sw: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
-  const [wrap, setWrap] = useState(false);
   const [dropHover, setDropHover] = useState<string | null>(null);
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
@@ -191,6 +190,12 @@ export default function App() {
   const setAlign = useCallback((cellId: string, align: 'left' | 'center' | 'right' | undefined) => {
     commit(rows.map(r => ({
       ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, align } : c),
+    })));
+  }, [rows, commit]);
+
+  const setWrapCell = useCallback((cellId: string, wrap: boolean) => {
+    commit(rows.map(r => ({
+      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, wrap: wrap || undefined } : c),
     })));
   }, [rows, commit]);
 
@@ -487,11 +492,12 @@ export default function App() {
                     </button>
                   );
                 })}
-                <button onClick={() => setWrap(w => !w)}
-                  className={`h-7 w-7 rounded-md border flex items-center justify-center ${
-                    wrap ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
+                <button onClick={() => selCell && setWrapCell(selId!, !selCell.cell.wrap)}
+                  disabled={!selCell}
+                  className={`h-7 w-7 rounded-md border flex items-center justify-center disabled:opacity-25 ${
+                    selCell?.cell.wrap ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
                   }`}
-                  title={`Wrap text: ${wrap ? 'ON' : 'OFF'}`}>
+                  title={`Wrap text: ${selCell?.cell.wrap ? 'ON' : 'OFF'}`}>
                   <WrapText className="w-3 h-3" />
                 </button>
               </div>
@@ -555,9 +561,10 @@ export default function App() {
                                 <div style={{
                                   textAlign: align, fontSize: '8pt', lineHeight: 1.1,
                                   fontWeight: c.field === 'sceneNumber' ? 700 : 500,
-                                  whiteSpace: wrap ? 'normal' : 'nowrap',
-                                  overflow: wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
-                                  textOverflow: wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
+                                  whiteSpace: c.wrap ? 'normal' : 'nowrap',
+                                  overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                                  textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
+                                  wordBreak: c.wrap ? 'break-word' : undefined,
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
                                   color: assigned ? undefined : '#d4d4d8',
                                 }}>
@@ -631,9 +638,10 @@ export default function App() {
                           padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                           verticalAlign: ri === 0 ? 'top' : 'middle',
                           borderRight: ci < row.cells.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
-                          whiteSpace: wrap ? 'normal' : 'nowrap',
-                          overflow: wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
-                          textOverflow: wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
+                          whiteSpace: c.wrap ? 'normal' : 'nowrap',
+                          overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                          textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
+                          wordBreak: c.wrap ? 'break-word' : undefined,
                           fontSize: '8pt', lineHeight: 1.1,
                           fontWeight: c.field === 'sceneNumber' ? 700 : 400,
                           textTransform: c.field === 'set' ? 'uppercase' : 'none',
