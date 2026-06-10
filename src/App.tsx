@@ -695,7 +695,7 @@ export default function App() {
 
         {/* ── Canvas ── */}
         <div className="flex-1 overflow-auto bg-zinc-100/70 p-8">
-          <div className="max-w-[960px] mx-auto pr-8 space-y-10">
+          <div className="max-w-[960px] mx-auto px-8 space-y-10">
 
             {/* ══ Designer ══ */}
             <section>
