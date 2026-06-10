@@ -855,7 +855,8 @@ export default function App() {
                               >
                                 <div style={{
                                   display: 'flex',
-                                  textAlign: align, fontSize: '8pt', lineHeight: 1.1,
+                                  justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
+                                  fontSize: '8pt', lineHeight: 1.1,
                                   fontWeight: c.field === 'sceneNumber' ? 700 : 500,
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
                                   color: assigned ? undefined : '#d4d4d8',
@@ -962,7 +963,7 @@ export default function App() {
                           fontWeight: c.field === 'sceneNumber' ? 700 : 400,
                           textTransform: c.field === 'set' ? 'uppercase' : 'none',
                         }}>
-                          <div style={{ display: 'flex' }}>
+                          <div style={{ display: 'flex', justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start' }}>
                             {c.prefix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{c.prefix}{'\u00A0'}</span>}
                             <span style={{
                               flexShrink: 1, minWidth: 0,
