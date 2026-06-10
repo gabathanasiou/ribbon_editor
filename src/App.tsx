@@ -787,7 +787,7 @@ export default function App() {
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                       border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
                     }} data-row={row.id}>
-                      <div style={{ display: 'flex', width: '100%', alignItems: 'stretch' }}>
+                      <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', paddingRight: 32 }}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
                           Empty &mdash; use Insert After from the toolbar to add cells
@@ -926,7 +926,7 @@ export default function App() {
                           if (k) setSelId(insertCellAt(row.id, row.cells.length, k));
                           else setSelId(addCell(row.id, row.cells.length - 1));
                         }}
-                        className={`absolute -right-8 top-1/2 -translate-y-1/2 cursor-pointer transition-colors z-20 ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
+                          className={`absolute right-1 top-1/2 -translate-y-1/2 cursor-pointer transition-colors z-20 ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
                           minHeight: 16, minWidth: '28pt',
                           border: `2px dashed ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? '#3b82f6' : '#d4d4d8'}`,
