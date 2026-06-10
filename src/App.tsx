@@ -695,10 +695,10 @@ export default function App() {
 
         {/* ── Canvas ── */}
         <div className="flex-1 overflow-auto bg-zinc-100/70 p-8">
-          <div className="max-w-[960px] mx-auto px-8 space-y-10">
+          <div className="max-w-[960px] mx-auto space-y-6">
 
             {/* ══ Designer ══ */}
-            <section>
+            <section className="bg-white rounded-lg border border-zinc-200 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Designer</span>
               </div>
@@ -944,7 +944,7 @@ export default function App() {
             </section>
 
             {/* ══ Live Preview ══ */}
-            <section>
+            <section className="bg-white rounded-lg border border-zinc-200 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Eye className="w-3.5 h-3.5 text-zinc-400" />
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Preview</span>
