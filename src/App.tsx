@@ -827,7 +827,8 @@ export default function App() {
                                   <span style={{
                                     flex: '1 1 0', minWidth: 0,
                                     whiteSpace: c.wrap ? 'normal' : 'nowrap',
-                                    overflow: 'hidden', textOverflow: 'ellipsis',
+                                    overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                                    textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
                                     wordBreak: c.wrap ? 'break-word' : undefined,
                                   }}>{assigned ? label : 'Empty'}</span>
                                   {c.suffix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{'\u00A0'}{c.suffix}</span>}
@@ -927,7 +928,8 @@ export default function App() {
                             <span style={{
                               flex: '1 1 0', minWidth: 0,
                               whiteSpace: c.wrap ? 'normal' : 'nowrap',
-                              overflow: 'hidden', textOverflow: 'ellipsis',
+                              overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                              textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
                               wordBreak: c.wrap ? 'break-word' : undefined,
                             }}>{val}</span>
                             {c.suffix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{'\u00A0'}{c.suffix}</span>}
