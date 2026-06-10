@@ -529,16 +529,18 @@ export default function App() {
                                 onClick={() => setSelId(c.id)}
                                 onDoubleClick={() => { setSelId(c.id); setChangeOpen(true); }}
                                 onContextMenu={e => { e.preventDefault(); setSelId(c.id); setChangeOpen(true); }}
-                                onDragOver={e => e.preventDefault()}
-                                onDrop={e => { e.preventDefault(); const k = e.dataTransfer.getData('text/field'); if (k) assign(c.id, k); }}
+                                onDragOver={e => { e.preventDefault(); setDropHover(c.id); }}
+                                onDragLeave={() => setDropHover(null)}
+                                onDrop={e => { e.preventDefault(); setDropHover(null); const k = e.dataTransfer.getData('text/field'); if (k) assign(c.id, k); }}
                                 className="relative cursor-pointer select-none transition-colors"
                                 style={{
                                   padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                                   verticalAlign: ri === 0 ? 'top' : 'middle',
                                   borderRight: ci < row.cells.length - 1 ? '1px solid #000' : 'none',
                                   borderBottom: '1px solid #000',
-                                  outline: isSel ? '2px solid #3b82f6' : 'none', outlineOffset: -1,
-                                  background: isSel ? 'rgba(59,130,246,0.06)' : 'transparent',
+                                  outline: isSel ? '2px solid #3b82f6' : dropHover === c.id ? '2px dashed #3b82f6' : 'none',
+                                  outlineOffset: -1,
+                                  background: dropHover === c.id ? 'rgba(59,130,246,0.1)' : isSel ? 'rgba(59,130,246,0.06)' : 'transparent',
                                   minHeight: 16,
                                 }}
                               >
@@ -546,7 +548,8 @@ export default function App() {
                                   textAlign: align, fontSize: '8pt', lineHeight: 1.1,
                                   fontWeight: c.field === 'sceneNumber' ? 700 : 500,
                                   whiteSpace: align === 'left' ? 'normal' : 'nowrap',
-                                  overflow: 'hidden', textOverflow: 'ellipsis',
+                                  overflow: ci < row.cells.length - 1 ? 'hidden' : 'visible',
+                                  textOverflow: ci < row.cells.length - 1 ? 'ellipsis' : 'clip',
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
                                   color: assigned ? undefined : '#d4d4d8',
                                 }}>
@@ -621,7 +624,8 @@ export default function App() {
                           verticalAlign: ri === 0 ? 'top' : 'middle',
                           borderRight: ci < row.cells.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
                           whiteSpace: align === 'left' ? 'normal' : 'nowrap',
-                          overflow: 'hidden', textOverflow: 'ellipsis',
+                          overflow: ci < row.cells.length - 1 ? 'hidden' : 'visible',
+                          textOverflow: ci < row.cells.length - 1 ? 'ellipsis' : 'clip',
                           fontSize: '8pt', lineHeight: 1.1,
                           fontWeight: c.field === 'sceneNumber' ? 700 : 400,
                           textTransform: c.field === 'set' ? 'uppercase' : 'none',
