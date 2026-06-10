@@ -80,6 +80,14 @@ function cid() { return `c${Math.random().toString(36).slice(2, 7)}`; }
 
 const MIN_PCT = 2.5; // minimum cell width %
 
+function normalizeCells(cells: ColCell[]): ColCell[] {
+  if (cells.length === 0) return cells;
+  const sum = cells.reduce((s, c) => s + c.width, 0);
+  if (Math.abs(sum - 100) < 0.01) return cells;
+  const scale = 100 / sum;
+  return cells.map(c => ({ ...c, width: Math.max(MIN_PCT, Math.round(c.width * scale * 100) / 100) }));
+}
+
 function mkRow(name: string, keys: string[]): RowConfig {
   return { id: cid(), name, cells: keys.map(k => {
     const f = FIELD_MAP[k];
@@ -322,11 +330,11 @@ export default function App() {
     const dw = f?.defaultWidth;
     const ds = f?.defaultSuffix;
     commit(rows.map(r => ({
-      ...r, cells: r.cells.map(c => c.id === cellId ? {
-        ...c, field: key, ...(dw ? { width: dw } : {}),
+      ...r, cells: normalizeCells(r.cells.map(c => c.id === cellId ? {
+        ...c, field: key, ...(dw && dw !== c.width ? { width: dw } : {}),
         suffix: ds,
         ...(key !== 'text' ? { textContent: undefined } : {}),
-      } : c),
+      } : c)),
     })));
   }, [rows, commit]);
 
@@ -337,7 +345,7 @@ export default function App() {
   }, [rows, commit]);
 
   const removeCell = useCallback((rowId: string, ci: number) => {
-    commit(rows.map(r => r.id === rowId ? { ...r, cells: r.cells.filter((_, i) => i !== ci) } : r));
+    commit(rows.map(r => r.id === rowId ? { ...r, cells: normalizeCells(r.cells.filter((_, i) => i !== ci)) } : r));
     setSelId(null);
   }, [rows, commit]);
 
@@ -347,7 +355,7 @@ export default function App() {
       if (r.id !== rowId) return r;
       const nc = [...r.cells];
       nc.splice(after + 1, 0, { id: newId, field: '', width: 10 });
-      return { ...r, cells: nc };
+      return { ...r, cells: normalizeCells(nc) };
     }));
     return newId;
   }, [rows, commit]);
@@ -359,7 +367,7 @@ export default function App() {
       if (r.id !== rowId) return r;
       const nc = [...r.cells];
       nc.splice(ci, 0, { id: newId, field: fieldKey || '', width: f?.defaultWidth || 10, suffix: f?.defaultSuffix });
-      return { ...r, cells: nc };
+      return { ...r, cells: normalizeCells(nc) };
     }));
     return newId;
   }, [rows, commit]);
@@ -395,19 +403,18 @@ export default function App() {
     const cell = { ...srcRow.cells[srcCi] };
     commit(rows.map(r => {
       if (r.id === srcRowId && r.id === tgtRowId) {
-        // same row
         const nc = r.cells.filter((_, i) => i !== srcCi);
         const insertAt = tgtCi > srcCi ? tgtCi - 1 : tgtCi;
         nc.splice(insertAt, 0, cell);
-        return { ...r, cells: nc };
+        return { ...r, cells: normalizeCells(nc) };
       }
       if (r.id === srcRowId) {
-        return { ...r, cells: r.cells.filter((_, i) => i !== srcCi) };
+        return { ...r, cells: normalizeCells(r.cells.filter((_, i) => i !== srcCi)) };
       }
       if (r.id === tgtRowId) {
         const nc = [...r.cells];
         nc.splice(tgtCi, 0, cell);
-        return { ...r, cells: nc };
+        return { ...r, cells: normalizeCells(nc) };
       }
       return r;
     }));
@@ -422,7 +429,7 @@ export default function App() {
       if (r.id !== rowId) return r;
       const nc = [...r.cells];
       [nc[ci], nc[j]] = [nc[j], nc[ci]];
-      return { ...r, cells: nc };
+      return { ...r, cells: normalizeCells(nc) };
     }));
   }, [rows, commit]);
 
