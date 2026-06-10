@@ -3,7 +3,7 @@ import {
   Hash, Clock, Timer, MapPin, Building2, Sun, Users, FileText, AlignLeft,
   Calendar, StickyNote, UserPlus, Sparkles, Car, Package, Shirt, Scissors,
   Volume1, Video, Volume2, Music, PawPrint, Sword, Leaf, PaintBucket,
-  Plus, Trash2, GripHorizontal, Columns, SplitSquareVertical,
+  Plus, Trash2, GripHorizontal,
   ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
   AlignCenter, AlignRight, WrapText, Grid3X3, Type,
@@ -181,6 +181,7 @@ export default function App() {
   const [dropHover, setDropHover] = useState<string | null>(null);
   const [cellDrag, setCellDrag]   = useState<{ rowId: string; cellId: string } | null>(null);
   const [cellDropTarget, setCellDropTarget] = useState<string | null>(null);
+  const [betweenDrop, setBetweenDrop] = useState<string | null>(null);
   const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
@@ -310,6 +311,16 @@ export default function App() {
     }));
   }, [rows, commit]);
 
+  const insertCellAt = useCallback((rowId: string, ci: number, fieldKey?: string) => {
+    const f = fieldKey ? FIELD_MAP[fieldKey] : null;
+    commit(rows.map(r => {
+      if (r.id !== rowId) return r;
+      const nc = [...r.cells];
+      nc.splice(ci, 0, { id: cid(), field: fieldKey || '', width: f?.defaultWidth || 80, suffix: f?.defaultSuffix });
+      return { ...r, cells: nc };
+    }));
+  }, [rows, commit]);
+
   const setAlign = useCallback((cellId: string, align: 'left' | 'center' | 'right' | undefined) => {
     commit(rows.map(r => ({
       ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, align } : c),
@@ -371,33 +382,6 @@ export default function App() {
       return { ...r, cells: nc };
     }));
   }, [rows, commit]);
-
-  const merge = useCallback(() => {
-    if (!selId) return;
-    const f = findCell(selId);
-    if (!f || f.ci >= f.row.cells.length - 1) return;
-    const a = f.row.cells[f.ci];
-    const b = f.row.cells[f.ci + 1];
-    const merged: ColCell = { id: cid(), field: a.field || '', width: a.width + b.width };
-    commit(rows.map(r => r.id !== f.row.id ? r : {
-      ...r, cells: r.cells.flatMap((c, i) => i === f.ci ? [merged] : i === f.ci + 1 ? [] : [c]),
-    }));
-    setSelId(merged.id);
-  }, [selId, rows, commit, findCell]);
-
-  const split = useCallback(() => {
-    if (!selId) return;
-    const f = findCell(selId);
-    if (!f) return;
-    const c = f.row.cells[f.ci];
-    const half = Math.floor(c.width / 2);
-    const left:  ColCell = { id: cid(), field: c.field, width: half };
-    const right: ColCell = { id: cid(), field: '', width: c.width - half };
-    commit(rows.map(r => r.id !== f.row.id ? r : {
-      ...r, cells: r.cells.flatMap((cc, i) => i === f.ci ? [left, right] : [cc]),
-    }));
-    setSelId(left.id);
-  }, [selId, rows, commit, findCell]);
 
   const addRow = useCallback(() => {
     commit([...rows, { id: cid(), name: `Row ${rows.length + 1}`, cells: [{ id: cid(), field: '', width: 200 }] }]);
@@ -633,14 +617,11 @@ export default function App() {
                   <Trash2 className="w-3 h-3" /> Clear
                 </button>
                 <div className="w-px h-4 bg-zinc-200 mx-1" />
-                <button onClick={merge} disabled={!selCell || selCell.ci >= selCell.row.cells.length - 1} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Merge with next cell">
-                  <Columns className="w-3 h-3" /> Merge &rarr;
-                </button>
-                <button onClick={split} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Split into two cells">
-                  <SplitSquareVertical className="w-3 h-3" /> Split
-                </button>
                 <button onClick={() => selCell && removeCell(selCell.row.id, selCell.ci)} disabled={!selCell || (selCell ? selCell.row.cells.length <= 1 : true)} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5">
                   <Trash2 className="w-3 h-3" /> Delete Cell
+                </button>
+                <button onClick={() => selCell && addCell(selCell.row.id, selCell.ci)} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Insert cell after selected">
+                  <Plus className="w-3 h-3" /> Insert After
                 </button>
                 <div className="w-px h-4 bg-zinc-200 mx-1" />
                 <button onClick={() => selCell && moveCell(selCell.row.id, selCell.ci, -1)} disabled={!selCell || selCell.ci === 0} className="h-7 w-7 rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-25 flex items-center justify-center" title="Move left">
@@ -718,7 +699,27 @@ export default function App() {
                           const label    = c.field === 'text' ? (c.textContent || 'Text') : getLabel(c.field);
 
                           return (
-                            <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}
+                            <React.Fragment key={c.id}>
+                              {/* Insertion zone before this cell */}
+                              <div
+                                onDragOver={e => { e.preventDefault(); e.stopPropagation(); setBetweenDrop(`${row.id}-${ci}`); }}
+                                onDragLeave={() => setBetweenDrop(null)}
+                                onDrop={e => {
+                                  e.stopPropagation(); setBetweenDrop(null);
+                                  if (cellDrag) {
+                                    const src = rows.find(r => r.id === cellDrag.rowId);
+                                    const sci = src?.cells.findIndex(cc => cc.id === cellDrag.cellId);
+                                    if (sci != null && sci >= 0) moveCellToRow(cellDrag.rowId, sci, row.id, ci);
+                                    setCellDrag(null);
+                                    return;
+                                  }
+                                  const k = e.dataTransfer.getData('text/field');
+                                  if (k) insertCellAt(row.id, ci, k);
+                                }}
+                                className={`inline-block align-top ${betweenDrop === `${row.id}-${ci}` ? 'w-[4pt] bg-blue-400 min-w-[4pt]' : ''}`}
+                                style={{ height: 16 }}
+                              />
+                              <div className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}
                               ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}
                             >
                               <div
@@ -788,6 +789,7 @@ export default function App() {
                                 <div className="absolute right-0 top-1 bottom-1 w-[2px] bg-zinc-200 group-hover/h:bg-blue-400 transition-colors rounded-full" />
                               </div>
                             </div>
+                            </React.Fragment>
                           );
                         })
                       )}
