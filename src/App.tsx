@@ -689,8 +689,12 @@ export default function App() {
                   </div>
                 </div>
               );
-            })}
-          </div>
+                    })}
+                    <div style={{
+                      flexShrink: 0, width: '48px',
+                      borderLeft: '1px solid rgba(0,0,0,0.10)',
+                    }} />
+                  </div>
         </aside>
 
         {/* ── Canvas ── */}
@@ -783,11 +787,12 @@ export default function App() {
                       </div>
                     </div>
 
+                    <div className="relative">
                     <div className="relative" style={{
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                       border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
                     }} data-row={row.id}>
-                      <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', paddingRight: 48 }}>
+                      <div style={{ display: 'flex', width: '100%', alignItems: 'stretch' }}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
                           Empty &mdash; use Insert After from the toolbar to add cells
@@ -901,6 +906,7 @@ export default function App() {
                         })
                       )}
                       </div>
+                      </div>
 
                       {/* + dropzone */}
                       <button
@@ -959,7 +965,7 @@ export default function App() {
               }}>
                 {rows.map((row, ri) => (
                   <div key={row.id} style={{
-                    display: 'flex', paddingRight: 48,
+                    display: 'flex',
                     borderBottom: showGrid && ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
                   }}>
                     {row.cells.map((c, ci) => {
