@@ -643,7 +643,7 @@ export default function App() {
       {/* ══ Body ══ */}
       <div className="flex-1 flex overflow-hidden">
         {/* ── Left: Palette ── */}
-        <aside className="w-[170px] shrink-0 bg-white border-r border-zinc-200 overflow-y-auto">
+        <aside className="w-[160px] shrink-0 bg-white border-r border-zinc-200 overflow-y-auto">
           <div className="p-3">
             <div className="flex items-center gap-1.5 mb-3">
               <Eye className="w-3.5 h-3.5 text-zinc-400" />
@@ -698,8 +698,8 @@ export default function App() {
         </aside>
 
         {/* ── Canvas ── */}
-        <div className="flex-1 overflow-auto bg-zinc-100/70 p-8">
-          <div className="max-w-[960px] mx-auto px-8 space-y-6">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-zinc-100/70 p-8">
+          <div className="max-w-[900px] mx-auto px-6 space-y-6">
 
             {/* ══ Designer ══ */}
             <section>
