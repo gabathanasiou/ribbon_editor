@@ -142,6 +142,7 @@ export default function App() {
   const [selId, setSelId]      = useState<string | null>(null);
   const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; sw: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
+  const [dropHover, setDropHover] = useState<string | null>(null);
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
 
@@ -565,16 +566,27 @@ export default function App() {
                         })
                       )}
 
-                      {/* Add cell button — inline at end */}
-                      <button onClick={() => addCell(row.id, row.cells.length - 1)}
-                        className="inline-block align-top cursor-pointer hover:bg-blue-50 transition-colors"
+                      {/* Dropzone — add cell at end */}
+                      <button
+                        onClick={() => addCell(row.id, row.cells.length - 1)}
+                        onDragOver={e => { e.preventDefault(); setDropHover(row.id); }}
+                        onDragLeave={() => setDropHover(null)}
+                        onDrop={e => {
+                          e.preventDefault();
+                          setDropHover(null);
+                          const k = e.dataTransfer.getData('text/field');
+                          if (k) commit(rows.map(r => r.id !== row.id ? r : { ...r, cells: [...r.cells, { id: cid(), field: k, width: FIELD_MAP[k]?.defaultWidth || 80 }] }));
+                          else addCell(row.id, row.cells.length - 1);
+                        }}
+                        className={`inline-block align-top cursor-pointer transition-colors ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
-                          padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
+                          padding: ri === 0 ? '3pt 6pt' : '0 6pt 3pt 6pt',
                           verticalAlign: ri === 0 ? 'top' : 'middle',
                           borderBottom: '1px solid #000',
-                          minHeight: 16, minWidth: 28,
+                          borderLeft: `2px dashed ${dropHover === row.id ? '#3b82f6' : '#d4d4d8'}`,
+                          minHeight: 16, minWidth: 40,
                         }}
-                      ><Plus className="w-3 h-3 text-zinc-400 hover:text-blue-500 mx-auto" /></button>
+                      ><Plus className={`w-3 h-3 ${dropHover === row.id ? 'text-blue-500' : 'text-zinc-400'}`} /></button>
                     </div>
                   </div>
                 ))}
