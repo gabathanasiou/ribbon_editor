@@ -78,7 +78,6 @@ function formatDuration(minutes: number): string {
 
 function cid() { return `c${Math.random().toString(36).slice(2, 7)}`; }
 
-const PAGE_W = 540; // A4 portrait minus margins (pt)
 const MIN_PCT = 2.5; // minimum cell width %
 
 function mkRow(name: string, keys: string[]): RowConfig {
@@ -741,7 +740,7 @@ export default function App() {
                     <div className="relative" style={{
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                       border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
-                      width: PAGE_W + 'pt', display: 'flex', alignItems: 'stretch',
+                      width: '100%', display: 'flex', alignItems: 'stretch',
                     }} data-row={row.id}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
@@ -909,7 +908,7 @@ export default function App() {
               <div className="inline-block" style={{
                 fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                 border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
-                width: PAGE_W + 'pt', maxWidth: '100%',
+                width: '100%',
               }}>
                 {rows.map((row, ri) => (
                   <div key={row.id} style={{
