@@ -176,10 +176,25 @@ export default function App() {
   const [selId, setSelId]      = useState<string | null>(null);
   const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; sw: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(false);
   const [dropHover, setDropHover] = useState<string | null>(null);
+  const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
+
+  const openMenu = useCallback((e?: React.MouseEvent) => {
+    if (e && e.type === 'contextmenu') {
+      setDropdownPos({ x: e.clientX, y: e.clientY });
+    } else if (selId) {
+      const el = cellRefs.current.get(selId);
+      if (el) {
+        const r = el.getBoundingClientRect();
+        setDropdownPos({ x: r.left, y: r.bottom + 2 });
+      }
+    }
+    setChangeOpen(true);
+  }, [selId]);
 
   const used   = new Set(rows.flatMap(r => r.cells.map(c => c.field)).filter(f => f && f !== 'text'));
   const placed = used.size;
@@ -582,72 +597,10 @@ export default function App() {
                   <span className="text-[10px] text-zinc-400 mr-1">Select a cell to edit</span>
                 )}
                 <div className="relative">
-                  <button onClick={() => selCell && setChangeOpen(o => !o)} disabled={!selCell} className="h-7 px-2.5 text-[10px] font-medium rounded-md bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1">
+                  <button onClick={(e) => { if (selCell) { openMenu(e); } }} disabled={!selCell} className="h-7 px-2.5 text-[10px] font-medium rounded-md bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1">
                     <ArrowRightLeft className="w-3 h-3" /> Change
                     <ChevronDown className="w-3 h-3 text-zinc-400" />
                   </button>
-                  {changeOpen && selCell && (
-                    <>
-                      <div className="fixed inset-0 z-40" onClick={() => setChangeOpen(false)} />
-                      <div className="absolute z-50 left-0 top-full mt-1 bg-white border border-zinc-200 rounded-lg shadow-xl py-1 min-w-[160px] max-h-[300px] overflow-y-auto">
-                        {ALL_FIELDS.filter(f => !used.has(f.key) || f.key === selCell.cell.field).map(f => {
-                          const Icon = f.icon;
-                          return (
-                            <button key={f.key}
-                              onClick={() => { assign(selId!, f.key); setChangeOpen(false); }}
-                              className={`w-full text-left px-2.5 py-1.5 text-[10px] hover:bg-zinc-50 flex items-center gap-2 ${f.key === selCell.cell.field ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'}`}>
-                              <Icon className="w-3 h-3" /> {f.label}
-                            </button>
-                          );
-                        })}
-                        {selCell.cell.field === 'text' && (
-                          <div className="px-2 py-1 border-t border-zinc-100">
-                            <textarea
-                              value={selCell.cell.textContent || ''}
-                              onChange={e => { e.stopPropagation(); setTextContent(selId!, e.target.value); }}
-                              placeholder="Type text..."
-                              className="w-full px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50 resize-none"
-                              rows={2}
-                              onClick={e => e.stopPropagation()}
-                            />
-                          </div>
-                        )}
-                        {selCell.cell.field && selCell.cell.field !== 'text' && (
-                          <div className="px-2 py-1 border-t border-zinc-100">
-                            <div className="flex items-center gap-1">
-                              <input
-                                value={selCell.cell.prefix || ''}
-                                onChange={e => { e.stopPropagation(); setAffix(selId!, 'prefix', e.target.value); }}
-                                placeholder="Prefix..."
-                                className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
-                                onClick={e => e.stopPropagation()}
-                              />
-                              <span className="text-[8px] text-zinc-300 shrink-0">&gt;</span>
-                              <input
-                                value={selCell.cell.suffix || ''}
-                                onChange={e => { e.stopPropagation(); setAffix(selId!, 'suffix', e.target.value); }}
-                                placeholder="Suffix..."
-                                className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
-                                onClick={e => e.stopPropagation()}
-                              />
-                            </div>
-                          </div>
-                        )}
-                        {selCell.cell.field && (
-                          <button onClick={() => { clearCell(selId!); setChangeOpen(false); }}
-                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2 border-t border-zinc-100 pt-1.5">
-                            <Trash2 className="w-3 h-3" /> Remove field
-                          </button>
-                        )}
-                        {selCell.row.cells.length > 1 && (
-                          <button onClick={() => { removeCell(selCell.row.id, selCell.ci); setChangeOpen(false); }}
-                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2">
-                            <Trash2 className="w-3 h-3" /> Delete cell
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
                 </div>
                 <button onClick={() => selCell && clearCell(selId!)} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:border-red-200 hover:text-red-500 disabled:opacity-30 flex items-center gap-1.5">
                   <Trash2 className="w-3 h-3" /> Clear
@@ -738,11 +691,12 @@ export default function App() {
                           const label    = c.field === 'text' ? (c.textContent || 'Text') : getLabel(c.field);
 
                           return (
-                            <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}>
+                            <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}
+                              ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}>
                               <div
                                 onClick={() => setSelId(c.id)}
-                                onDoubleClick={() => { setSelId(c.id); setChangeOpen(true); }}
-                                onContextMenu={e => { e.preventDefault(); setSelId(c.id); setChangeOpen(true); }}
+                                onDoubleClick={(e) => { setSelId(c.id); openMenu(e); }}
+                                onContextMenu={e => { e.preventDefault(); setSelId(c.id); openMenu(e); }}
                                 onDragOver={e => { e.preventDefault(); setDropHover(c.id); }}
                                 onDragLeave={() => setDropHover(null)}
                                 onDrop={e => { e.preventDefault(); setDropHover(null); const k = e.dataTransfer.getData('text/field'); if (k) assign(c.id, k); }}
@@ -768,7 +722,7 @@ export default function App() {
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
                                   color: assigned ? undefined : '#d4d4d8',
                                 }}>
-                                  {assigned ? <>{c.prefix}{label}{c.suffix}</> : 'Empty'}
+                                  {assigned ? <>{c.prefix}{c.prefix ? ' ' : ''}{label}{c.suffix ? ' ' : ''}{c.suffix}</> : 'Empty'}
                                 </div>
                               </div>
 
@@ -851,7 +805,7 @@ export default function App() {
                           fontWeight: c.field === 'sceneNumber' ? 700 : 400,
                           textTransform: c.field === 'set' ? 'uppercase' : 'none',
                         }}>
-                          {c.prefix}{val}{c.suffix}
+                          {c.prefix}{c.prefix ? ' ' : ''}{val}{c.suffix ? ' ' : ''}{c.suffix}
                         </div>
                       );
                     })}
@@ -862,6 +816,76 @@ export default function App() {
           </div>
         </div>
       </div>
+      {/* ── Floating Change dropdown ── */}
+      {changeOpen && selCell && (() => {
+        const PW = 200;
+        const PH = 340;
+        const px = Math.max(4, Math.min(dropdownPos.x, window.innerWidth - PW - 4));
+        const py = dropdownPos.y + PH > window.innerHeight ? Math.max(4, dropdownPos.y - PH - 8) : Math.min(dropdownPos.y, window.innerHeight - PH - 4);
+        return (
+          <>
+            <div className="fixed inset-0 z-40" onClick={() => setChangeOpen(false)} />
+            <div className="fixed z-50 bg-white border border-zinc-200 rounded-lg shadow-xl py-1 overflow-y-auto"
+              style={{ left: px, top: py, minWidth: PW, maxWidth: 240, maxHeight: PH }}>
+              {ALL_FIELDS.filter(f => !used.has(f.key) || f.key === selCell.cell.field).map(f => {
+                const Icon = f.icon;
+                return (
+                  <button key={f.key}
+                    onClick={() => { assign(selId!, f.key); setChangeOpen(false); }}
+                    className={`w-full text-left px-2.5 py-1.5 text-[10px] hover:bg-zinc-50 flex items-center gap-2 ${f.key === selCell.cell.field ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                    <Icon className="w-3 h-3" /> {f.label}
+                  </button>
+                );
+              })}
+              {selCell.cell.field === 'text' && (
+                <div className="px-2 py-1 border-t border-zinc-100">
+                  <textarea
+                    value={selCell.cell.textContent || ''}
+                    onChange={e => { e.stopPropagation(); setTextContent(selId!, e.target.value); }}
+                    placeholder="Type text..."
+                    className="w-full px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50 resize-none"
+                    rows={2}
+                    onClick={e => e.stopPropagation()}
+                  />
+                </div>
+              )}
+              {selCell.cell.field && selCell.cell.field !== 'text' && (
+                <div className="px-2 py-1 border-t border-zinc-100">
+                  <div className="flex items-center gap-1">
+                    <input
+                      value={selCell.cell.prefix || ''}
+                      onChange={e => { e.stopPropagation(); setAffix(selId!, 'prefix', e.target.value); }}
+                      placeholder="Prefix..."
+                      className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
+                      onClick={e => e.stopPropagation()}
+                    />
+                    <span className="text-[8px] text-zinc-300 shrink-0">&gt;</span>
+                    <input
+                      value={selCell.cell.suffix || ''}
+                      onChange={e => { e.stopPropagation(); setAffix(selId!, 'suffix', e.target.value); }}
+                      placeholder="Suffix..."
+                      className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
+                      onClick={e => e.stopPropagation()}
+                    />
+                  </div>
+                </div>
+              )}
+              {selCell.cell.field && (
+                <button onClick={() => { clearCell(selId!); setChangeOpen(false); }}
+                  className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2 border-t border-zinc-100 pt-1.5">
+                  <Trash2 className="w-3 h-3" /> Remove field
+                </button>
+              )}
+              {selCell.row.cells.length > 1 && (
+                <button onClick={() => { removeCell(selCell.row.id, selCell.ci); setChangeOpen(false); }}
+                  className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2">
+                  <Trash2 className="w-3 h-3" /> Delete cell
+                </button>
+              )}
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
