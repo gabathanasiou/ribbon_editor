@@ -946,7 +946,7 @@ export default function App() {
             </section>
 
             {/* ══ Live Preview ══ */}
-            <section className="bg-white rounded-lg border border-zinc-200 p-6">
+            <section className="bg-white rounded-lg border border-zinc-200 p-6 pr-10">
               <div className="flex items-center gap-2 mb-4">
                 <Eye className="w-3.5 h-3.5 text-zinc-400" />
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Preview</span>
@@ -960,7 +960,7 @@ export default function App() {
               }}>
                 {rows.map((row, ri) => (
                   <div key={row.id} style={{
-                    display: 'flex',
+                    display: 'flex', paddingRight: 32,
                     borderBottom: showGrid && ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
                   }}>
                     {row.cells.map((c, ci) => {
