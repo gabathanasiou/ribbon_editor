@@ -18,36 +18,34 @@ interface RowConfig { id: string; name: string; cells: ColCell[]; }
 interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
 
 const ALL_FIELDS: FieldDef[] = [
-  // Built-in fields. To add custom fields at runtime, push to this array:
-  //   ALL_FIELDS.push({ key: 'custom_x', label: 'My Field', defaultWidth: 60, align: 'left', icon: Circle, category: 'Custom' });
-  // The palette, assignment logic, and preview all operate on ALL_FIELDS dynamically.
-  { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 15, align: 'center', icon: Hash,        category: 'Scene Info' },
-  { key: 'callTime',    label: 'Call Time',  defaultWidth: 30, align: 'center', icon: Clock,       category: 'Shooting' },
-  { key: 'duration',    label: 'Duration',   defaultWidth: 30, align: 'center', icon: Timer,       category: 'Shooting' },
-  { key: 'intExt',      label: 'I/E',        defaultWidth: 34, align: 'left',   icon: MapPin,      category: 'Shooting' },
-  { key: 'set',         label: 'Set',        defaultWidth: 120,align: 'left',   icon: Building2,   category: 'Shooting' },
-  { key: 'dayNight',    label: 'D/N',        defaultWidth: 40, align: 'left',   icon: Sun,         category: 'Shooting' },
-  { key: 'cast',        label: 'Cast',       defaultWidth: 56, align: 'left',   icon: Users,       category: 'Cast & Talent' },
-  { key: 'pages',       label: 'Pages',      defaultWidth: 34, align: 'center', icon: FileText,    category: 'Scene Info', defaultSuffix: 'pgs' },
-  { key: 'description', label: 'Synopsis',   defaultWidth: 284,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
-  { key: 'scriptDay',   label: 'Script Day', defaultWidth: 40, align: 'center', icon: Calendar,    category: 'Production' },
-  { key: 'location',    label: 'Location',   defaultWidth: 80, align: 'left',   icon: MapPin,      category: 'Production' },
-  { key: 'notes',       label: 'Notes',      defaultWidth: 80, align: 'left',   icon: StickyNote,  category: 'Production' },
-  { key: 'extras',      label: 'BG Artists', defaultWidth: 60, align: 'left',   icon: UserPlus,    category: 'Cast & Talent' },
-  { key: 'stunts',      label: 'Stunts',     defaultWidth: 60, align: 'left',   icon: Sparkles,    category: 'Cast & Talent' },
-  { key: 'vehicles',    label: 'Vehicles',   defaultWidth: 60, align: 'left',   icon: Car,         category: 'Breakdown' },
-  { key: 'props',       label: 'Props',      defaultWidth: 60, align: 'left',   icon: Package,     category: 'Breakdown' },
-  { key: 'wardrobe',    label: 'Wardrobe',   defaultWidth: 60, align: 'left',   icon: Shirt,       category: 'Breakdown' },
-  { key: 'makeup',      label: 'Makeup',     defaultWidth: 60, align: 'left',   icon: Scissors,    category: 'Breakdown' },
-  { key: 'sfx',         label: 'SFX',        defaultWidth: 60, align: 'left',   icon: Volume1,     category: 'VFX & Audio' },
-  { key: 'vfx',         label: 'VFX',        defaultWidth: 60, align: 'left',   icon: Video,       category: 'VFX & Audio' },
-  { key: 'sound',       label: 'Sound',      defaultWidth: 60, align: 'left',   icon: Volume2,     category: 'VFX & Audio' },
-  { key: 'music',       label: 'Music',      defaultWidth: 60, align: 'left',   icon: Music,       category: 'VFX & Audio' },
-  { key: 'animals',     label: 'Animals',    defaultWidth: 60, align: 'left',   icon: PawPrint,    category: 'Misc' },
-  { key: 'weapons',     label: 'Weapons',    defaultWidth: 60, align: 'left',   icon: Sword,       category: 'Misc' },
-  { key: 'greenery',    label: 'Greenery',   defaultWidth: 60, align: 'left',   icon: Leaf,        category: 'Misc' },
-  { key: 'artDept',     label: 'Art Dept',   defaultWidth: 60, align: 'left',   icon: PaintBucket, category: 'Misc' },
-  { key: 'text',        label: 'Text',        defaultWidth: 100, align: 'left',   icon: Type,        category: 'Special' },
+  // Percentages proportional to PrintSchedule pt widths (Row 1 total = 359pt, scaled to 100%)
+  { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 4.18, align: 'center', icon: Hash,        category: 'Scene Info' },
+  { key: 'callTime',    label: 'Call Time',  defaultWidth: 8.36, align: 'center', icon: Clock,       category: 'Shooting' },
+  { key: 'duration',    label: 'Duration',   defaultWidth: 8.36, align: 'center', icon: Timer,       category: 'Shooting' },
+  { key: 'intExt',      label: 'I/E',        defaultWidth: 9.47, align: 'left',   icon: MapPin,      category: 'Shooting' },
+  { key: 'set',         label: 'Set',        defaultWidth: 33.43,align: 'left',   icon: Building2,   category: 'Shooting' },
+  { key: 'dayNight',    label: 'D/N',        defaultWidth: 11.14,align: 'left',   icon: Sun,         category: 'Shooting' },
+  { key: 'cast',        label: 'Cast',       defaultWidth: 15.60,align: 'left',   icon: Users,       category: 'Cast & Talent' },
+  { key: 'pages',       label: 'Pages',      defaultWidth: 9.47, align: 'center', icon: FileText,    category: 'Scene Info', defaultSuffix: 'pgs' },
+  { key: 'description', label: 'Synopsis',   defaultWidth: 79.11,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
+  { key: 'scriptDay',   label: 'Script Day', defaultWidth: 11.14,align: 'center', icon: Calendar,    category: 'Production' },
+  { key: 'location',    label: 'Location',   defaultWidth: 22.28,align: 'left',   icon: MapPin,      category: 'Production' },
+  { key: 'notes',       label: 'Notes',      defaultWidth: 22.28,align: 'left',   icon: StickyNote,  category: 'Production' },
+  { key: 'extras',      label: 'BG Artists', defaultWidth: 16.71,align: 'left',   icon: UserPlus,    category: 'Cast & Talent' },
+  { key: 'stunts',      label: 'Stunts',     defaultWidth: 16.71,align: 'left',   icon: Sparkles,    category: 'Cast & Talent' },
+  { key: 'vehicles',    label: 'Vehicles',   defaultWidth: 16.71,align: 'left',   icon: Car,         category: 'Breakdown' },
+  { key: 'props',       label: 'Props',      defaultWidth: 16.71,align: 'left',   icon: Package,     category: 'Breakdown' },
+  { key: 'wardrobe',    label: 'Wardrobe',   defaultWidth: 16.71,align: 'left',   icon: Shirt,       category: 'Breakdown' },
+  { key: 'makeup',      label: 'Makeup',     defaultWidth: 16.71,align: 'left',   icon: Scissors,    category: 'Breakdown' },
+  { key: 'sfx',         label: 'SFX',        defaultWidth: 16.71,align: 'left',   icon: Volume1,     category: 'VFX & Audio' },
+  { key: 'vfx',         label: 'VFX',        defaultWidth: 16.71,align: 'left',   icon: Video,       category: 'VFX & Audio' },
+  { key: 'sound',       label: 'Sound',      defaultWidth: 16.71,align: 'left',   icon: Volume2,     category: 'VFX & Audio' },
+  { key: 'music',       label: 'Music',      defaultWidth: 16.71,align: 'left',   icon: Music,       category: 'VFX & Audio' },
+  { key: 'animals',     label: 'Animals',    defaultWidth: 16.71,align: 'left',   icon: PawPrint,    category: 'Misc' },
+  { key: 'weapons',     label: 'Weapons',    defaultWidth: 16.71,align: 'left',   icon: Sword,       category: 'Misc' },
+  { key: 'greenery',    label: 'Greenery',   defaultWidth: 16.71,align: 'left',   icon: Leaf,        category: 'Misc' },
+  { key: 'artDept',     label: 'Art Dept',   defaultWidth: 16.71,align: 'left',   icon: PaintBucket, category: 'Misc' },
+  { key: 'text',        label: 'Text',        defaultWidth: 27.86,align: 'left',   icon: Type,        category: 'Special' },
 ];
 
 const FIELD_MAP = Object.fromEntries(ALL_FIELDS.map(f => [f.key, f]));
@@ -80,10 +78,13 @@ function formatDuration(minutes: number): string {
 
 function cid() { return `c${Math.random().toString(36).slice(2, 7)}`; }
 
+const PAGE_W = 540; // A4 portrait minus margins (pt)
+const MIN_PCT = 2.5; // minimum cell width %
+
 function mkRow(name: string, keys: string[]): RowConfig {
   return { id: cid(), name, cells: keys.map(k => {
     const f = FIELD_MAP[k];
-    return { id: cid(), field: k, width: f?.defaultWidth || 60, suffix: f?.defaultSuffix };
+    return { id: cid(), field: k, width: f?.defaultWidth || 10, suffix: f?.defaultSuffix };
   }) };
 }
 
@@ -178,7 +179,7 @@ export default function App() {
 
   const { rows, commit, reset, undo, redo, liveMutate, replace, canUndo, canRedo } = useUndoableRows(loadInitialRows);
   const [selId, setSelId]      = useState<string | null>(null);
-  const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; sw: number } | null>(null);
+  const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; a: number; b: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [showGrid, setShowGrid] = useState(false);
@@ -346,7 +347,7 @@ export default function App() {
     commit(rows.map(r => {
       if (r.id !== rowId) return r;
       const nc = [...r.cells];
-      nc.splice(after + 1, 0, { id: newId, field: '', width: 80 });
+      nc.splice(after + 1, 0, { id: newId, field: '', width: 10 });
       return { ...r, cells: nc };
     }));
     return newId;
@@ -358,7 +359,7 @@ export default function App() {
     commit(rows.map(r => {
       if (r.id !== rowId) return r;
       const nc = [...r.cells];
-      nc.splice(ci, 0, { id: newId, field: fieldKey || '', width: f?.defaultWidth || 80, suffix: f?.defaultSuffix });
+      nc.splice(ci, 0, { id: newId, field: fieldKey || '', width: f?.defaultWidth || 10, suffix: f?.defaultSuffix });
       return { ...r, cells: nc };
     }));
     return newId;
@@ -427,7 +428,7 @@ export default function App() {
   }, [rows, commit]);
 
   const addRow = useCallback(() => {
-    commit([...rows, { id: cid(), name: `Row ${rows.length + 1}`, cells: [{ id: cid(), field: '', width: 200 }] }]);
+    commit([...rows, { id: cid(), name: `Row ${rows.length + 1}`, cells: [{ id: cid(), field: '', width: 100 }] }]);
   }, [rows, commit]);
 
   const removeRow = useCallback((rid: string) => {
@@ -451,10 +452,18 @@ export default function App() {
   useEffect(() => {
     if (!resizing) return;
     const onMove = (e: MouseEvent) => {
-      const w = Math.max(10, resizing.sw + (e.clientX - resizing.sx));
+      const rowEl = document.querySelector(`[data-row="${resizing.rowId}"]`) as HTMLElement | null;
+      if (!rowEl) return;
+      const pxW = rowEl.offsetWidth || 1;
+      const deltaPct = ((e.clientX - resizing.sx) / pxW) * 100;
+      const newA = Math.max(MIN_PCT, Math.min(resizing.a + resizing.b - MIN_PCT, resizing.a + deltaPct));
+      const newB = resizing.a + resizing.b - newA;
       liveMutate(all => {
         for (const r of all) {
-          if (r.id === resizing.rowId) r.cells[resizing.ci].width = Math.round(w);
+          if (r.id === resizing.rowId && resizing.ci < r.cells.length - 1) {
+            r.cells[resizing.ci].width = Math.round(newA * 100) / 100;
+            r.cells[resizing.ci + 1].width = Math.round(newB * 100) / 100;
+          }
         }
       });
     };
@@ -503,7 +512,6 @@ export default function App() {
   /* helpers */
 
   const selCell = selId ? findCell(selId) : null;
-  const totalWidth = rows.reduce((mx, r) => Math.max(mx, r.cells.reduce((s, c) => s + c.width, 0)), 0);
 
   const getAlign = (c?: ColCell) => {
     if (c?.align) return c.align;
@@ -654,7 +662,7 @@ export default function App() {
               {/* Action bar — always visible to prevent layout jumping */}
               <div className="flex items-center gap-1.5 mb-2 flex-wrap" style={{ minHeight: 28 }}>
                 {selCell ? (
-                  <span className="text-[10px] text-zinc-400 font-mono mr-1">{selCell.row.name} &middot; col {selCell.ci + 1} &middot; {selCell.cell.width}pt</span>
+                  <span className="text-[10px] text-zinc-400 font-mono mr-1">{selCell.row.name} &middot; col {selCell.ci + 1} &middot; {selCell.cell.width.toFixed(1)}%</span>
                 ) : (
                   <span className="text-[10px] text-zinc-400 mr-1">Select a cell to edit</span>
                 )}
@@ -717,7 +725,7 @@ export default function App() {
                   <div key={row.id} className="group/row">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-[10px] font-semibold text-zinc-500 select-none">{row.name}</span>
-                      <span className="text-[9px] text-zinc-300 select-none">{row.cells.length}c &middot; {row.cells.reduce((s, c) => s + c.width, 0)}pt</span>
+                      <span className="text-[9px] text-zinc-300 select-none">{row.cells.length}c &middot; {row.cells.reduce((s, c) => s + c.width, 0).toFixed(1)}%</span>
                       <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
                         <button onClick={() => moveRow(row.id, -1)} disabled={ri === 0}
                           className="p-1 rounded hover:bg-zinc-200 disabled:opacity-20"><ArrowUp className="w-3 h-3 text-zinc-400" /></button>
@@ -733,8 +741,8 @@ export default function App() {
                     <div className="relative" style={{
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                       border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
-                      minWidth: totalWidth + 'pt',
-                    }}>
+                      width: PAGE_W + 'pt', display: 'flex', alignItems: 'stretch',
+                    }} data-row={row.id}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
                           Empty &mdash; use Insert After from the toolbar to add cells
@@ -764,12 +772,11 @@ export default function App() {
                                   const k = e.dataTransfer.getData('text/field');
                                   if (k) setSelId(insertCellAt(row.id, ci, k));
                                 }}
-                                className={`inline-block align-top ${betweenDrop === `${row.id}-${ci}` ? 'w-[4pt] bg-blue-400 min-w-[4pt]' : ''}`}
-                                style={{ height: 16 }}
+                                className={`${betweenDrop === `${row.id}-${ci}` ? 'w-[4pt] bg-blue-400 min-w-[4pt]' : 'w-0 min-w-0'}`}
+                                style={{ height: 16, flexShrink: 0 }}
                               />
-                              <div className="relative inline-block group/cell" style={{ width: c.width + 'pt', verticalAlign: 'middle' }}
-                              ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}
-                            >
+                               <div className="relative group/cell" style={{ flex: `0 0 ${c.width}%`, minWidth: 0 }}
+                               ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}>
                               <div
                                 onClick={() => setSelId(c.id)}
                                 onDoubleClick={(e) => { setSelId(c.id); openMenu(e); }}
@@ -837,7 +844,7 @@ export default function App() {
 
                               {/* Resize handle */}
                               <div
-                                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setResizing({ rowId: row.id, ci, sx: e.clientX, sw: c.width }); }}
+                                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); if (ci < row.cells.length - 1) setResizing({ rowId: row.id, ci, sx: e.clientX, a: c.width, b: row.cells[ci+1].width }); }}
                                 className="absolute right-0 top-0 bottom-0 w-[6px] cursor-col-resize z-10 group/h"
                               >
                                 <div className="absolute right-0 top-1 bottom-1 w-[2px] bg-zinc-200 group-hover/h:bg-blue-400 transition-colors rounded-full" />
@@ -902,19 +909,19 @@ export default function App() {
               <div className="inline-block" style={{
                 fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                 border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
-                width: '740pt', maxWidth: '100%',
-                minWidth: Math.max(349, totalWidth) + 'pt',
+                width: PAGE_W + 'pt', maxWidth: '100%',
               }}>
                 {rows.map((row, ri) => (
                   <div key={row.id} style={{
+                    display: 'flex',
                     borderBottom: showGrid && ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
                   }}>
                     {row.cells.map((c, ci) => {
                       const align = getAlign(c);
                       const val = c.field === 'text' ? (c.textContent || '') : c.field ? (cellValue(c.field) || '\u00A0') : '\u00A0';
                       return (
-                        <div key={c.id} className="inline-block" style={{
-                          width: c.width + 'pt', textAlign: align,
+                        <div key={c.id} style={{
+                          flex: `0 0 ${c.width}%`, minWidth: 0, textAlign: align,
                           padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                           verticalAlign: 'middle',
                           borderRight: ci < row.cells.length - 1 ? (showGrid ? '1px solid rgba(0,0,0,0.12)' : `1px solid ${STYLE.bg}`) : 'none',
