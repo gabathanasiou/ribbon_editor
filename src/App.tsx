@@ -6,7 +6,7 @@ import {
   Plus, Trash2, GripHorizontal, Columns, SplitSquareVertical,
   ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
-  AlignCenter, AlignRight,
+  AlignCenter, AlignRight, WrapText,
 } from 'lucide-react';
 
 /* ── Types & Data ─────────────────────────────────── */
@@ -142,6 +142,7 @@ export default function App() {
   const [selId, setSelId]      = useState<string | null>(null);
   const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; sw: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
+  const [wrap, setWrap] = useState(false);
   const [dropHover, setDropHover] = useState<string | null>(null);
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
@@ -486,6 +487,13 @@ export default function App() {
                     </button>
                   );
                 })}
+                <button onClick={() => setWrap(w => !w)}
+                  className={`h-7 w-7 rounded-md border flex items-center justify-center ${
+                    wrap ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
+                  }`}
+                  title={`Wrap text: ${wrap ? 'ON' : 'OFF'}`}>
+                  <WrapText className="w-3 h-3" />
+                </button>
               </div>
 
               {/* Ribbon rows */}
@@ -547,9 +555,9 @@ export default function App() {
                                 <div style={{
                                   textAlign: align, fontSize: '8pt', lineHeight: 1.1,
                                   fontWeight: c.field === 'sceneNumber' ? 700 : 500,
-                                  whiteSpace: 'nowrap',
-                                  overflow: ci < row.cells.length - 1 ? 'hidden' : 'visible',
-                                  textOverflow: ci < row.cells.length - 1 ? 'ellipsis' : 'clip',
+                                  whiteSpace: wrap ? 'normal' : 'nowrap',
+                                  overflow: wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                                  textOverflow: wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
                                   color: assigned ? undefined : '#d4d4d8',
                                 }}>
@@ -623,9 +631,9 @@ export default function App() {
                           padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                           verticalAlign: ri === 0 ? 'top' : 'middle',
                           borderRight: ci < row.cells.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
-                          whiteSpace: 'nowrap',
-                          overflow: ci < row.cells.length - 1 ? 'hidden' : 'visible',
-                          textOverflow: ci < row.cells.length - 1 ? 'ellipsis' : 'clip',
+                          whiteSpace: wrap ? 'normal' : 'nowrap',
+                          overflow: wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                          textOverflow: wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
                           fontSize: '8pt', lineHeight: 1.1,
                           fontWeight: c.field === 'sceneNumber' ? 700 : 400,
                           textTransform: c.field === 'set' ? 'uppercase' : 'none',
