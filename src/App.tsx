@@ -6,8 +6,7 @@ import {
   Plus, Trash2, GripHorizontal,
   ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
-  AlignCenter, AlignRight, WrapText, Grid3X3, Type,
-  AlignStartVertical, AlignCenterVertical, AlignEndVertical,
+  AlignCenter, AlignRight, WrapText, Grid3X3, Type, Minus,
 } from 'lucide-react';
 
 /* ── Types & Data ─────────────────────────────────── */
@@ -659,7 +658,7 @@ export default function App() {
                   );
                 })}
                 {(['top', 'middle', 'bottom'] as const).map(a => {
-                  const Icon = a === 'top' ? AlignStartVertical : a === 'middle' ? AlignCenterVertical : AlignEndVertical;
+                  const Icon = a === 'top' ? ArrowUp : a === 'middle' ? Minus : ArrowDown;
                   const active = selCell?.cell.valign === a || (!selCell?.cell.valign && getVAlign(selCell?.cell) === a);
                   return (
                     <button key={'v' + a}
