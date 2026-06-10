@@ -764,7 +764,7 @@ export default function App() {
               </div>
 
               {/* Ribbon rows */}
-              <div className="bg-white rounded-lg border border-zinc-200 p-6 pr-10">
+              <div className="bg-white rounded-lg border border-zinc-200 p-6">
                 <div className="space-y-5">
                 {rows.map((row, ri) => (
                   <div key={row.id} className="group/row">
@@ -787,7 +787,7 @@ export default function App() {
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                       border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
                     }} data-row={row.id}>
-                      <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', paddingRight: 32 }}>
+                      <div style={{ display: 'flex', width: '100%', alignItems: 'stretch', paddingRight: 48 }}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
                           Empty &mdash; use Insert After from the toolbar to add cells
@@ -926,7 +926,7 @@ export default function App() {
                           if (k) setSelId(insertCellAt(row.id, row.cells.length, k));
                           else setSelId(addCell(row.id, row.cells.length - 1));
                         }}
-                          className={`absolute right-1 top-1/2 -translate-y-1/2 cursor-pointer transition-colors z-20 ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
+                          className={`absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer transition-colors z-20 ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
                           minHeight: 16, minWidth: '28pt',
                           border: `2px dashed ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? '#3b82f6' : '#d4d4d8'}`,
@@ -946,7 +946,7 @@ export default function App() {
             </section>
 
             {/* ══ Live Preview ══ */}
-            <section className="bg-white rounded-lg border border-zinc-200 p-6 pr-10">
+            <section className="bg-white rounded-lg border border-zinc-200 p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Eye className="w-3.5 h-3.5 text-zinc-400" />
                 <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Preview</span>
@@ -960,7 +960,7 @@ export default function App() {
               }}>
                 {rows.map((row, ri) => (
                   <div key={row.id} style={{
-                    display: 'flex', paddingRight: 32,
+                    display: 'flex', paddingRight: 48,
                     borderBottom: showGrid && ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
                   }}>
                     {row.cells.map((c, ci) => {
