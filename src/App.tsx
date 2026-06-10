@@ -14,6 +14,7 @@ import {
 interface FieldDef { key: string; label: string; defaultWidth: number; align: 'left' | 'center' | 'right'; icon: React.ElementType; category: string; }
 interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; wrap?: boolean; }
 interface RowConfig { id: string; name: string; cells: ColCell[]; }
+interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
 
 const ALL_FIELDS: FieldDef[] = [
   { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 15, align: 'center', icon: Hash,        category: 'Scene Info' },
@@ -24,7 +25,7 @@ const ALL_FIELDS: FieldDef[] = [
   { key: 'dayNight',    label: 'D/N',        defaultWidth: 40, align: 'left',   icon: Sun,         category: 'Shooting' },
   { key: 'cast',        label: 'Cast',       defaultWidth: 56, align: 'left',   icon: Users,       category: 'Cast & Talent' },
   { key: 'pages',       label: 'Pages',      defaultWidth: 34, align: 'center', icon: FileText,    category: 'Scene Info' },
-  { key: 'description', label: 'Synopsis',   defaultWidth: 200,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
+  { key: 'description', label: 'Synopsis',   defaultWidth: 284,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
   { key: 'scriptDay',   label: 'Script Day', defaultWidth: 40, align: 'center', icon: Calendar,    category: 'Production' },
   { key: 'location',    label: 'Location',   defaultWidth: 80, align: 'left',   icon: MapPin,      category: 'Production' },
   { key: 'notes',       label: 'Notes',      defaultWidth: 80, align: 'left',   icon: StickyNote,  category: 'Production' },
@@ -132,13 +133,32 @@ function useUndoableRows(initial: () => RowConfig[]) {
   const canUndo = undos.current.length > 1;
   const canRedo = redos.current.length > 0;
 
-  return { rows: current, commit, reset, undo, redo, liveMutate, canUndo, canRedo };
+  const replace = useCallback((newRows: RowConfig[]) => {
+    undos.current = [cloneRows(newRows)];
+    redos.current = [];
+    setTick(t => t + 1);
+  }, []);
+
+  return { rows: current, commit, reset, undo, redo, liveMutate, replace, canUndo, canRedo };
 }
 
 /* ── App ──────────────────────────────────────────── */
 
 export default function App() {
-  const { rows, commit, reset, undo, redo, liveMutate, canUndo, canRedo } = useUndoableRows(DEFAULT_ROWS);
+  const loadInitialRows = useCallback((): RowConfig[] => {
+    try {
+      const raw = localStorage.getItem('ribbon_designs');
+      if (raw) {
+        const designs: RibbonDesign[] = JSON.parse(raw);
+        const activeId = localStorage.getItem('ribbon_active_id');
+        const active = designs.find(d => d.id === activeId);
+        if (active) return active.rows;
+      }
+    } catch { /* ignore corrupt data */ }
+    return DEFAULT_ROWS();
+  }, []);
+
+  const { rows, commit, reset, undo, redo, liveMutate, replace, canUndo, canRedo } = useUndoableRows(loadInitialRows);
   const [selId, setSelId]      = useState<string | null>(null);
   const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; sw: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
@@ -149,6 +169,71 @@ export default function App() {
   const used   = new Set(rows.flatMap(r => r.cells.map(c => c.field)).filter(Boolean));
   const placed = used.size;
   const total  = ALL_FIELDS.length;
+
+  /* ── Design management (localStorage) ── */
+
+  const [designs, setDesigns] = useState<RibbonDesign[]>(() => {
+    try { const raw = localStorage.getItem('ribbon_designs'); return raw ? JSON.parse(raw) : []; }
+    catch { return []; }
+  });
+  const [activeId, setActiveId] = useState<string>(() => localStorage.getItem('ribbon_active_id') || '');
+  const [showDesigns, setShowDesigns] = useState(false);
+
+  const activeDesign = designs.find(d => d.id === activeId);
+
+  const saveDesigns = useCallback((d: RibbonDesign[]) => {
+    setDesigns(d);
+    localStorage.setItem('ribbon_designs', JSON.stringify(d));
+  }, []);
+
+  const createDesign = useCallback((name: string) => {
+    const id = `d${Date.now()}`;
+    const d: RibbonDesign = { id, name, rows: cloneRows(rows), createdAt: Date.now() };
+    const next = [...designs, d];
+    saveDesigns(next);
+    setActiveId(id);
+    localStorage.setItem('ribbon_active_id', id);
+  }, [designs, rows, saveDesigns]);
+
+  const renameDesign = useCallback((id: string, name: string) => {
+    saveDesigns(designs.map(d => d.id === id ? { ...d, name } : d));
+  }, [designs, saveDesigns]);
+
+  const deleteDesign = useCallback((id: string) => {
+    const next = designs.filter(d => d.id !== id);
+    saveDesigns(next);
+    if (id === activeId) {
+      const newActive = next[0];
+      if (newActive) {
+        setActiveId(newActive.id);
+        localStorage.setItem('ribbon_active_id', newActive.id);
+        replace(newActive.rows);
+      } else {
+        setActiveId('');
+        localStorage.removeItem('ribbon_active_id');
+        replace(DEFAULT_ROWS());
+      }
+    }
+  }, [designs, activeId, saveDesigns, replace]);
+
+  const switchDesign = useCallback((id: string) => {
+    setActiveId(id);
+    localStorage.setItem('ribbon_active_id', id);
+    const d = designs.find(dd => dd.id === id);
+    if (d) replace(d.rows);
+    setShowDesigns(false);
+  }, [designs, replace]);
+
+  /* auto-save active design (debounced) */
+  const saveTimer = useRef(0);
+  useEffect(() => {
+    if (!activeId) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = window.setTimeout(() => {
+      const now = Date.now();
+      saveDesigns(designs.map(d => d.id === activeId ? { ...d, rows: cloneRows(rows), createdAt: now } : d));
+    }, 400);
+  }, [rows, activeId]);
 
   const findCell = useCallback((cid: string) => {
     for (const r of rows) {
@@ -328,7 +413,47 @@ export default function App() {
       {/* ══ Top bar ══ */}
       <header className="flex items-center gap-3 px-5 py-2 bg-white border-b border-zinc-200 shrink-0 select-none">
         <LayoutGrid className="w-4 h-4 text-blue-500" />
-        <span className="text-[13px] font-semibold text-zinc-800">Ribbon Designer</span>
+        <div className="relative">
+          <button onClick={() => setShowDesigns(o => !o)} className="flex items-center gap-1 hover:bg-zinc-100 rounded px-1.5 py-0.5">
+            <span className="text-[13px] font-semibold text-zinc-800">{activeDesign?.name || 'Untitled'}</span>
+            <ChevronDown className="w-3 h-3 text-zinc-400" />
+          </button>
+          {showDesigns && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowDesigns(false)} />
+              <div className="absolute z-50 left-0 top-full mt-1 bg-white border border-zinc-200 rounded-lg shadow-xl py-1 min-w-[200px] max-h-[300px] overflow-y-auto">
+                {designs.map(d => (
+                  <button key={d.id} onClick={() => switchDesign(d.id)}
+                    className={`w-full text-left px-3 py-1.5 text-[11px] hover:bg-zinc-50 flex items-center gap-2 ${d.id === activeId ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                    <span className="truncate flex-1">{d.name}</span>
+                    <span className="text-[9px] text-zinc-300 shrink-0">{new Date(d.createdAt).toLocaleDateString()}</span>
+                  </button>
+                ))}
+                {designs.length === 0 && (
+                  <div className="px-3 py-2 text-[10px] text-zinc-400 text-center">No saved designs</div>
+                )}
+                <div className="border-t border-zinc-100 mt-1 pt-1">
+                  <button onClick={() => { const n = prompt('Design name'); if (n) createDesign(n.trim()); setShowDesigns(false); }}
+                    className="w-full text-left px-3 py-1.5 text-[10px] text-blue-600 hover:bg-blue-50 flex items-center gap-2">
+                    <Plus className="w-3 h-3" /> New design
+                  </button>
+                  {activeDesign && (
+                    <>
+                      <button onClick={() => { const n = prompt('Rename', activeDesign.name); if (n) renameDesign(activeId, n.trim()); setShowDesigns(false); }}
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2">
+                        &hellip; Rename
+                      </button>
+                      <button onClick={() => { if (confirm(`Delete "${activeDesign.name}"?`)) deleteDesign(activeId); setShowDesigns(false); }}
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2">
+                        <Trash2 className="w-3 h-3" /> Delete
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
         <span className="text-[11px] text-zinc-400">{placed}/{total} fields used</span>
         <div className="flex-1" />
         <div className="flex items-center gap-1">
@@ -523,8 +648,8 @@ export default function App() {
 
                     <div className="relative" style={{
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
-                      border: '2px solid #000', background: STYLE.bg, color: STYLE.fg,
-                      minWidth: Math.max(349, totalWidth),
+                      border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
+                      minWidth: Math.max(349, totalWidth) + 'pt',
                     }}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
@@ -538,7 +663,7 @@ export default function App() {
                           const label    = getLabel(c.field);
 
                           return (
-                            <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width }}>
+                            <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}>
                               <div
                                 onClick={() => setSelId(c.id)}
                                 onDoubleClick={() => { setSelId(c.id); setChangeOpen(true); }}
@@ -602,7 +727,7 @@ export default function App() {
                           verticalAlign: ri === 0 ? 'top' : 'middle',
                           borderBottom: '1px solid #000',
                           borderLeft: `2px dashed ${dropHover === row.id ? '#3b82f6' : '#d4d4d8'}`,
-                          minHeight: 16, minWidth: 40,
+                          minHeight: 16, minWidth: '40pt',
                         }}
                       ><Plus className={`w-3 h-3 ${dropHover === row.id ? 'text-blue-500' : 'text-zinc-400'}`} /></button>
                     </div>
@@ -623,21 +748,21 @@ export default function App() {
                 <span className="ml-auto text-[9px] text-zinc-400">Sample data</span>
               </div>
 
-              <div className="inline-block shadow-lg ring-1 ring-zinc-200 rounded" style={{
+              <div className="inline-block" style={{
                 fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
-                border: '2px solid #000', background: STYLE.bg, color: STYLE.fg,
+                border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
               }}>
                 {rows.map((row, ri) => (
-                  <div key={row.id} style={{ borderBottom: ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none' }}>
+                  <div key={row.id}>
                     {row.cells.map((c, ci) => {
                       const align = getAlign(c);
                       const val = c.field ? (cellValue(c.field) || '\u00A0') : '\u00A0';
                       return (
                         <div key={c.id} className="inline-block" style={{
-                          width: c.width, textAlign: align,
+                          width: c.width + 'pt', textAlign: align,
                           padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                           verticalAlign: ri === 0 ? 'top' : 'middle',
-                          borderRight: ci < row.cells.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
+                          borderRight: ci < row.cells.length - 1 ? `1px solid ${STYLE.bg}` : 'none',
                           whiteSpace: c.wrap ? 'normal' : 'nowrap',
                           overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
                           textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
