@@ -6,19 +6,19 @@ import {
   Plus, Trash2, GripHorizontal, Columns, SplitSquareVertical,
   ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
-  AlignCenter, AlignRight, WrapText, Grid3X3,
+  AlignCenter, AlignRight, WrapText, Grid3X3, Type,
 } from 'lucide-react';
 
 /* ── Types & Data ─────────────────────────────────── */
 
 interface FieldDef { key: string; label: string; defaultWidth: number; align: 'left' | 'center' | 'right'; icon: React.ElementType; category: string; }
-interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; wrap?: boolean; }
+interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; wrap?: boolean; prefix?: string; suffix?: string; textContent?: string; }
 interface RowConfig { id: string; name: string; cells: ColCell[]; }
 interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
 
 const ALL_FIELDS: FieldDef[] = [
   { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 15, align: 'center', icon: Hash,        category: 'Scene Info' },
-  { key: 'callTime',    label: 'Call Time',  defaultWidth: 20, align: 'center', icon: Clock,       category: 'Shooting' },
+  { key: 'callTime',    label: 'Call Time',  defaultWidth: 30, align: 'center', icon: Clock,       category: 'Shooting' },
   { key: 'duration',    label: 'Duration',   defaultWidth: 30, align: 'center', icon: Timer,       category: 'Shooting' },
   { key: 'intExt',      label: 'I/E',        defaultWidth: 34, align: 'left',   icon: MapPin,      category: 'Shooting' },
   { key: 'set',         label: 'Set',        defaultWidth: 120,align: 'left',   icon: Building2,   category: 'Shooting' },
@@ -43,13 +43,14 @@ const ALL_FIELDS: FieldDef[] = [
   { key: 'weapons',     label: 'Weapons',    defaultWidth: 60, align: 'left',   icon: Sword,       category: 'Misc' },
   { key: 'greenery',    label: 'Greenery',   defaultWidth: 60, align: 'left',   icon: Leaf,        category: 'Misc' },
   { key: 'artDept',     label: 'Art Dept',   defaultWidth: 60, align: 'left',   icon: PaintBucket, category: 'Misc' },
+  { key: 'text',        label: 'Text',        defaultWidth: 100, align: 'left',   icon: Type,        category: 'Special' },
 ];
 
 const FIELD_MAP = Object.fromEntries(ALL_FIELDS.map(f => [f.key, f]));
 const CATEGORIES = [...new Set(ALL_FIELDS.map(f => f.category))];
 
 const SAMPLE: Record<string, string> = {
-  sceneNumber: '5', callTime: '08:00', duration: '2:30', intExt: 'INT',
+  sceneNumber: '5', callTime: '08:00', duration: '150', intExt: 'INT',
   set: 'KITCHEN', dayNight: 'DAY', cast: '1, 2, 4', pages: '2 3/8',
   description: 'John makes breakfast while arguing with Mary about the party.',
   scriptDay: '3', location: 'HOUSE', notes: 'Need breakfast props — call crafty.',
@@ -63,6 +64,15 @@ const SAMPLE: Record<string, string> = {
 
 const INT_EXT: Record<string, string> = { INT: 'INT', EXT: 'EXT' };
 const DAY_NIGHT: Record<string, string> = { DAY: 'DAY', NIGHT: 'NIGHT', MORNING: 'MORN', EVENING: 'EVE' };
+
+function formatDuration(minutes: number): string {
+  if (!minutes) return '';
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+}
 
 function cid() { return `c${Math.random().toString(36).slice(2, 7)}`; }
 
@@ -79,6 +89,7 @@ function cellValue(field: string): string {
   if (!field) return '';
   const v = SAMPLE[field] || '';
   if (field === 'pages') return v ? `${v} pgs` : '';
+  if (field === 'duration') return v ? formatDuration(Number(v)) : '';
   if (field === 'intExt') return INT_EXT[v] || v;
   if (field === 'dayNight') return DAY_NIGHT[v] || v;
   return v;
@@ -167,7 +178,7 @@ export default function App() {
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
 
-  const used   = new Set(rows.flatMap(r => r.cells.map(c => c.field)).filter(Boolean));
+  const used   = new Set(rows.flatMap(r => r.cells.map(c => c.field)).filter(f => f && f !== 'text'));
   const placed = used.size;
   const total  = ALL_FIELDS.length;
 
@@ -249,7 +260,10 @@ export default function App() {
   const assign = useCallback((cellId: string, key: string) => {
     const dw = FIELD_MAP[key]?.defaultWidth;
     commit(rows.map(r => ({
-      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, field: key, ...(dw ? { width: dw } : {}) } : c),
+      ...r, cells: r.cells.map(c => c.id === cellId ? {
+        ...c, field: key, ...(dw ? { width: dw } : {}),
+        ...(key !== 'text' ? { textContent: undefined } : {}),
+      } : c),
     })));
   }, [rows, commit]);
 
@@ -282,6 +296,18 @@ export default function App() {
   const setWrapCell = useCallback((cellId: string, wrap: boolean) => {
     commit(rows.map(r => ({
       ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, wrap: wrap || undefined } : c),
+    })));
+  }, [rows, commit]);
+
+  const setAffix = useCallback((cellId: string, key: 'prefix' | 'suffix', value: string) => {
+    commit(rows.map(r => ({
+      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, [key]: value || undefined } : c),
+    })));
+  }, [rows, commit]);
+
+  const setTextContent = useCallback((cellId: string, text: string) => {
+    commit(rows.map(r => ({
+      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, textContent: text || undefined } : c),
     })));
   }, [rows, commit]);
 
@@ -566,6 +592,39 @@ export default function App() {
                             </button>
                           );
                         })}
+                        {selCell.cell.field === 'text' && (
+                          <div className="px-2 py-1 border-t border-zinc-100">
+                            <textarea
+                              value={selCell.cell.textContent || ''}
+                              onChange={e => { e.stopPropagation(); setTextContent(selId!, e.target.value); }}
+                              placeholder="Type text..."
+                              className="w-full px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50 resize-none"
+                              rows={2}
+                              onClick={e => e.stopPropagation()}
+                            />
+                          </div>
+                        )}
+                        {selCell.cell.field && selCell.cell.field !== 'text' && (
+                          <div className="px-2 py-1 border-t border-zinc-100">
+                            <div className="flex items-center gap-1">
+                              <input
+                                value={selCell.cell.prefix || ''}
+                                onChange={e => { e.stopPropagation(); setAffix(selId!, 'prefix', e.target.value); }}
+                                placeholder="Prefix..."
+                                className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
+                                onClick={e => e.stopPropagation()}
+                              />
+                              <span className="text-[8px] text-zinc-300 shrink-0">&gt;</span>
+                              <input
+                                value={selCell.cell.suffix || ''}
+                                onChange={e => { e.stopPropagation(); setAffix(selId!, 'suffix', e.target.value); }}
+                                placeholder="Suffix..."
+                                className="flex-1 min-w-0 px-1.5 py-0.5 text-[9px] rounded border border-zinc-200 focus:outline-none focus:border-blue-300 bg-zinc-50"
+                                onClick={e => e.stopPropagation()}
+                              />
+                            </div>
+                          </div>
+                        )}
                         {selCell.cell.field && (
                           <button onClick={() => { clearCell(selId!); setChangeOpen(false); }}
                             className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2 border-t border-zinc-100 pt-1.5">
@@ -657,7 +716,7 @@ export default function App() {
                     <div className="relative" style={{
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                       border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
-                      minWidth: Math.max(349, totalWidth) + 'pt',
+                      minWidth: totalWidth + 'pt',
                     }}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
@@ -668,7 +727,7 @@ export default function App() {
                           const assigned = Boolean(c.field);
                           const isSel    = selId === c.id;
                           const align    = getAlign(c);
-                          const label    = getLabel(c.field);
+                          const label    = c.field === 'text' ? (c.textContent || 'Text') : getLabel(c.field);
 
                           return (
                             <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}>
@@ -701,7 +760,7 @@ export default function App() {
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
                                   color: assigned ? undefined : '#d4d4d8',
                                 }}>
-                                  {assigned ? label : 'Empty'}
+                                  {assigned ? <>{c.prefix}{label}{c.suffix}</> : 'Empty'}
                                 </div>
                               </div>
 
@@ -759,6 +818,8 @@ export default function App() {
               <div className="inline-block" style={{
                 fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                 border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
+                width: '740pt', maxWidth: '100%',
+                minWidth: Math.max(349, totalWidth) + 'pt',
               }}>
                 {rows.map((row, ri) => (
                   <div key={row.id} style={{
@@ -766,7 +827,7 @@ export default function App() {
                   }}>
                     {row.cells.map((c, ci) => {
                       const align = getAlign(c);
-                      const val = c.field ? (cellValue(c.field) || '\u00A0') : '\u00A0';
+                      const val = c.field === 'text' ? (c.textContent || '') : c.field ? (cellValue(c.field) || '\u00A0') : '\u00A0';
                       return (
                         <div key={c.id} className="inline-block" style={{
                           width: c.width + 'pt', textAlign: align,
@@ -781,7 +842,7 @@ export default function App() {
                           fontWeight: c.field === 'sceneNumber' ? 700 : 400,
                           textTransform: c.field === 'set' ? 'uppercase' : 'none',
                         }}>
-                          {val}
+                          {c.prefix}{val}{c.suffix}
                         </div>
                       );
                     })}
