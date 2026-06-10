@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  background: #e4e4e7;
+}
+
+:root {
+  --ribbon-print-width: 11in;
+  --ribbon-print-height: 8.5in;
+}
+
+@media print {
+  body { background: white; }
+  .no-print { display: none !important; }
+}
