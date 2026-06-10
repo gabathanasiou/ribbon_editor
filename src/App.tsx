@@ -1,374 +1,628 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { GripVertical, Plus, Trash2, X, ArrowUpDown } from 'lucide-react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  Hash, Clock, Timer, MapPin, Building2, Sun, Users, FileText, AlignLeft,
+  Calendar, StickyNote, UserPlus, Sparkles, Car, Package, Shirt, Scissors,
+  Volume1, Video, Volume2, Music, PawPrint, Sword, Leaf, PaintBucket,
+  Plus, Trash2, GripHorizontal, Columns, SplitSquareVertical,
+  ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
+  Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
+  AlignCenter, AlignRight,
+} from 'lucide-react';
 
-interface RibbonCell {
-  id: string;
-  col: number;
-  row: number;
-  elementType: string | null;
-  label: string;
-}
+/* ── Types & Data ─────────────────────────────────── */
 
-interface ColumnDef {
-  id: string;
-  width: number;
-}
+interface FieldDef { key: string; label: string; defaultWidth: number; align: 'left' | 'center' | 'right'; icon: React.ElementType; category: string; }
+interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; }
+interface RowConfig { id: string; name: string; cells: ColCell[]; }
 
-type ElementType = {
-  key: string;
-  label: string;
+const ALL_FIELDS: FieldDef[] = [
+  { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 15, align: 'center', icon: Hash,        category: 'Scene Info' },
+  { key: 'callTime',    label: 'Call Time',  defaultWidth: 20, align: 'center', icon: Clock,       category: 'Shooting' },
+  { key: 'duration',    label: 'Duration',   defaultWidth: 30, align: 'center', icon: Timer,       category: 'Shooting' },
+  { key: 'intExt',      label: 'I/E',        defaultWidth: 34, align: 'left',   icon: MapPin,      category: 'Shooting' },
+  { key: 'set',         label: 'Set',        defaultWidth: 120,align: 'left',   icon: Building2,   category: 'Shooting' },
+  { key: 'dayNight',    label: 'D/N',        defaultWidth: 40, align: 'left',   icon: Sun,         category: 'Shooting' },
+  { key: 'cast',        label: 'Cast',       defaultWidth: 56, align: 'left',   icon: Users,       category: 'Cast & Talent' },
+  { key: 'pages',       label: 'Pages',      defaultWidth: 34, align: 'center', icon: FileText,    category: 'Scene Info' },
+  { key: 'description', label: 'Synopsis',   defaultWidth: 200,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
+  { key: 'scriptDay',   label: 'Script Day', defaultWidth: 40, align: 'center', icon: Calendar,    category: 'Production' },
+  { key: 'location',    label: 'Location',   defaultWidth: 80, align: 'left',   icon: MapPin,      category: 'Production' },
+  { key: 'notes',       label: 'Notes',      defaultWidth: 80, align: 'left',   icon: StickyNote,  category: 'Production' },
+  { key: 'extras',      label: 'BG Artists', defaultWidth: 60, align: 'left',   icon: UserPlus,    category: 'Cast & Talent' },
+  { key: 'stunts',      label: 'Stunts',     defaultWidth: 60, align: 'left',   icon: Sparkles,    category: 'Cast & Talent' },
+  { key: 'vehicles',    label: 'Vehicles',   defaultWidth: 60, align: 'left',   icon: Car,         category: 'Breakdown' },
+  { key: 'props',       label: 'Props',      defaultWidth: 60, align: 'left',   icon: Package,     category: 'Breakdown' },
+  { key: 'wardrobe',    label: 'Wardrobe',   defaultWidth: 60, align: 'left',   icon: Shirt,       category: 'Breakdown' },
+  { key: 'makeup',      label: 'Makeup',     defaultWidth: 60, align: 'left',   icon: Scissors,    category: 'Breakdown' },
+  { key: 'sfx',         label: 'SFX',        defaultWidth: 60, align: 'left',   icon: Volume1,     category: 'VFX & Audio' },
+  { key: 'vfx',         label: 'VFX',        defaultWidth: 60, align: 'left',   icon: Video,       category: 'VFX & Audio' },
+  { key: 'sound',       label: 'Sound',      defaultWidth: 60, align: 'left',   icon: Volume2,     category: 'VFX & Audio' },
+  { key: 'music',       label: 'Music',      defaultWidth: 60, align: 'left',   icon: Music,       category: 'VFX & Audio' },
+  { key: 'animals',     label: 'Animals',    defaultWidth: 60, align: 'left',   icon: PawPrint,    category: 'Misc' },
+  { key: 'weapons',     label: 'Weapons',    defaultWidth: 60, align: 'left',   icon: Sword,       category: 'Misc' },
+  { key: 'greenery',    label: 'Greenery',   defaultWidth: 60, align: 'left',   icon: Leaf,        category: 'Misc' },
+  { key: 'artDept',     label: 'Art Dept',   defaultWidth: 60, align: 'left',   icon: PaintBucket, category: 'Misc' },
+];
+
+const FIELD_MAP = Object.fromEntries(ALL_FIELDS.map(f => [f.key, f]));
+const CATEGORIES = [...new Set(ALL_FIELDS.map(f => f.category))];
+
+const SAMPLE: Record<string, string> = {
+  sceneNumber: '5', callTime: '08:00', duration: '2:30', intExt: 'INT',
+  set: 'KITCHEN', dayNight: 'DAY', cast: '1, 2, 4', pages: '2 3/8',
+  description: 'John makes breakfast while arguing with Mary about the party.',
+  scriptDay: '3', location: 'HOUSE', notes: 'Need breakfast props — call crafty.',
+  extras: '20 BG', stunts: 'Stunt double: JOHN', vehicles: '2× police car',
+  props: 'Frying pan, phone, mug', wardrobe: 'Casual: JOHN, Biz: MARY',
+  makeup: 'Prosthetic scar: JOHN', sfx: 'Gunshot (off-screen)', vfx: 'Window replacement',
+  sound: 'Dialogue cleanup', music: 'Track 5 — Morning Montage',
+  animals: '1× cat (orange tabby)', weapons: 'Prop knife (rubber)',
+  greenery: 'Fake potted plants ×3', artDept: '1950s kitchen calendar, curtains',
 };
 
-const AVAILABLE_ELEMENTS: ElementType[] = [
-  { key: 'dayNumber', label: 'Day #' },
-  { key: 'date', label: 'Date' },
-  { key: 'set', label: 'Set' },
-  { key: 'cast', label: 'Cast' },
-  { key: 'pages', label: 'Pages' },
-  { key: 'location', label: 'Location' },
-  { key: 'props', label: 'Props' },
-  { key: 'wardrobe', label: 'Wardrobe' },
-  { key: 'makeup', label: 'Makeup / Hair' },
-  { key: 'sfx', label: 'SFX' },
-  { key: 'vfx', label: 'VFX' },
-  { key: 'sound', label: 'Sound' },
-  { key: 'music', label: 'Music' },
-  { key: 'animals', label: 'Animals' },
-  { key: 'weapons', label: 'Weapons' },
-  { key: 'greenery', label: 'Greenery' },
-  { key: 'artDept', label: 'Art Dept' },
-  { key: 'extras', label: 'Supporting Artists' },
-  { key: 'stunts', label: 'Stunts' },
-  { key: 'vehicles', label: 'Vehicles' },
-  { key: 'notes', label: 'Notes' },
-  { key: 'callTime', label: 'Call Time' },
-  { key: 'intExt', label: 'I/E' },
-  { key: 'dayNight', label: 'D/N' },
-  { key: 'description', label: 'Synopsis' },
-  { key: 'scriptDay', label: 'Script Day' },
-  { key: 'sceneNumber', label: 'Scene #' },
-];
+const INT_EXT: Record<string, string> = { INT: 'INT', EXT: 'EXT' };
+const DAY_NIGHT: Record<string, string> = { DAY: 'DAY', NIGHT: 'NIGHT', MORNING: 'MORN', EVENING: 'EVE' };
 
-const RIBBON_ROWS = 2;
-const DEFAULT_COLUMNS: ColumnDef[] = [
-  { id: 'c1', width: 40 },
-  { id: 'c2', width: 35 },
-  { id: 'c3', width: 40 },
-  { id: 'c4', width: 40 },
-  { id: 'c5', width: 200 },
-  { id: 'c6', width: 75 },
-  { id: 'c7', width: 50 },
-  { id: 'c8', width: 50 },
-];
+function cid() { return `c${Math.random().toString(36).slice(2, 7)}`; }
 
-function nextCellId() { return `cell-${Math.random().toString(36).slice(2)}`; }
-
-function buildDefaultCells(): RibbonCell[] {
-  const defaults: [number, number, string, string][] = [
-    [0, 0, 'dayNumber', 'DAY #1'],
-    [5, 0, 'date', 'Monday, 1 June 2026'],
-    [1, 1, 'callTime', '08:00'],
-    [4, 1, 'set', 'KITCHEN'],
-    [6, 1, 'cast', '1, 2, 3'],
-    [7, 1, 'pages', '4 3/8 pgs'],
-  ];
-  return defaults.map(([col, row, type, label]) => ({
-    id: nextCellId(), col, row, elementType: type, label,
-  }));
+function mkRow(name: string, keys: string[]): RowConfig {
+  return { id: cid(), name, cells: keys.map(k => ({ id: cid(), field: k, width: FIELD_MAP[k]?.defaultWidth || 60 })) };
 }
 
-const SAMPLE_SCENES = [
-  { scene: '1', set: 'KITCHEN', cast: '1. JOHN, 2. MARY', pages: '2 3/8 pgs', desc: 'John makes breakfast' },
-  { scene: '2', set: 'KITCHEN', cast: '1. JOHN', pages: '1 pgs', desc: 'Phone call with Mary' },
-  { scene: '3', set: 'LIVING ROOM', cast: '2. MARY, 3. ROBERT', pages: '1 5/8 pgs', desc: 'Mary confronts Robert' },
+const DEFAULT_ROWS = (): RowConfig[] => [
+  mkRow('Row 1', ['sceneNumber','callTime','duration','intExt','set','dayNight','cast','pages']),
+  mkRow('Row 2', ['description']),
 ];
 
-export default function App() {
-  const [columns, setColumns] = useState<ColumnDef[]>(DEFAULT_COLUMNS);
-  const [cells, setCells] = useState<RibbonCell[]>(buildDefaultCells);
-  const [draggingEl, setDraggingEl] = useState<ElementType | null>(null);
-  const [dropTarget, setDropTarget] = useState<{col: number; row: number} | null>(null);
-  const [editingCell, setEditingCell] = useState<string | null>(null);
-  const [resizing, setResizing] = useState<{colIdx: number; startX: number; startW: number} | null>(null);
-  const [selectedCol, setSelectedCol] = useState<number | null>(null);
+function cellValue(field: string): string {
+  if (!field) return '';
+  const v = SAMPLE[field] || '';
+  if (field === 'pages') return v ? `${v} pgs` : '';
+  if (field === 'intExt') return INT_EXT[v] || v;
+  if (field === 'dayNight') return DAY_NIGHT[v] || v;
+  return v;
+}
 
-  const totalWidth = columns.reduce((s, c) => s + c.width, 0);
+const STYLE = { bg: '#ffffff', fg: '#464646' };
+
+/* ── Undo / Redo ──────────────────────────────────── */
+
+function cloneRows(rs: RowConfig[]): RowConfig[] { return JSON.parse(JSON.stringify(rs)); }
+
+function useUndoableRows(initial: () => RowConfig[]) {
+  const [tick, setTick] = useState(0);
+  const undos = useRef<RowConfig[][]>([cloneRows(initial())]);
+  const redos = useRef<RowConfig[][]>([]);
+
+  const current = undos.current[undos.current.length - 1];
+
+  const reset = useCallback(() => {
+    const fresh = cloneRows(initial());
+    undos.current = [fresh];
+    redos.current = [];
+    setTick(t => t + 1);
+  }, [initial]);
+
+  const commit = useCallback((next: RowConfig[]) => {
+    undos.current.push(next);
+    if (undos.current.length > 100) undos.current.shift();
+    redos.current = [];
+    setTick(t => t + 1);
+  }, []);
+
+  const undo = useCallback(() => {
+    if (undos.current.length < 2) return;
+    redos.current.push(undos.current.pop()!);
+    setTick(t => t + 1);
+  }, []);
+
+  const redo = useCallback(() => {
+    if (redos.current.length === 0) return;
+    undos.current.push(redos.current.pop()!);
+    setTick(t => t + 1);
+  }, []);
+
+  const liveMutate = useCallback((mutator: (rows: RowConfig[]) => void) => {
+    const all = cloneRows(undos.current[undos.current.length - 1]);
+    mutator(all);
+    undos.current[undos.current.length - 1] = all;
+    setTick(t => t + 1);
+  }, []);
+
+  const canUndo = undos.current.length > 1;
+  const canRedo = redos.current.length > 0;
+
+  return { rows: current, commit, reset, undo, redo, liveMutate, canUndo, canRedo };
+}
+
+/* ── App ──────────────────────────────────────────── */
+
+export default function App() {
+  const { rows, commit, reset, undo, redo, liveMutate, canUndo, canRedo } = useUndoableRows(DEFAULT_ROWS);
+  const [selId, setSelId]      = useState<string | null>(null);
+  const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; sw: number } | null>(null);
+  const [changeOpen, setChangeOpen] = useState(false);
+
+  React.useEffect(() => { setChangeOpen(false); }, [selId]);
+
+  const used   = new Set(rows.flatMap(r => r.cells.map(c => c.field)).filter(Boolean));
+  const placed = used.size;
+  const total  = ALL_FIELDS.length;
+
+  const findCell = useCallback((cid: string) => {
+    for (const r of rows) {
+      const ci = r.cells.findIndex(c => c.id === cid);
+      if (ci >= 0) return { row: r, ci, cell: r.cells[ci] };
+    }
+    return null;
+  }, [rows]);
+
+  /* actions */
+
+  const assign = useCallback((cellId: string, key: string) => {
+    const dw = FIELD_MAP[key]?.defaultWidth;
+    commit(rows.map(r => ({
+      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, field: key, ...(dw ? { width: dw } : {}) } : c),
+    })));
+  }, [rows, commit]);
+
+  const clearCell = useCallback((cellId: string) => {
+    commit(rows.map(r => ({
+      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, field: '' } : c),
+    })));
+  }, [rows, commit]);
+
+  const removeCell = useCallback((rowId: string, ci: number) => {
+    commit(rows.map(r => r.id === rowId ? { ...r, cells: r.cells.filter((_, i) => i !== ci) } : r));
+    setSelId(null);
+  }, [rows, commit]);
+
+  const addCell = useCallback((rowId: string, after: number) => {
+    commit(rows.map(r => {
+      if (r.id !== rowId) return r;
+      const nc = [...r.cells];
+      nc.splice(after + 1, 0, { id: cid(), field: '', width: 80 });
+      return { ...r, cells: nc };
+    }));
+  }, [rows, commit]);
+
+  const setAlign = useCallback((cellId: string, align: 'left' | 'center' | 'right' | undefined) => {
+    commit(rows.map(r => ({
+      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, align } : c),
+    })));
+  }, [rows, commit]);
+
+  const moveCell = useCallback((rowId: string, ci: number, dir: -1 | 1) => {
+    const j = ci + dir;
+    if (j < 0) return;
+    const row = rows.find(r => r.id === rowId);
+    if (!row || j >= row.cells.length) return;
+    commit(rows.map(r => {
+      if (r.id !== rowId) return r;
+      const nc = [...r.cells];
+      [nc[ci], nc[j]] = [nc[j], nc[ci]];
+      return { ...r, cells: nc };
+    }));
+  }, [rows, commit]);
+
+  const merge = useCallback(() => {
+    if (!selId) return;
+    const f = findCell(selId);
+    if (!f || f.ci >= f.row.cells.length - 1) return;
+    const a = f.row.cells[f.ci];
+    const b = f.row.cells[f.ci + 1];
+    const merged: ColCell = { id: cid(), field: a.field || '', width: a.width + b.width };
+    commit(rows.map(r => r.id !== f.row.id ? r : {
+      ...r, cells: r.cells.flatMap((c, i) => i === f.ci ? [merged] : i === f.ci + 1 ? [] : [c]),
+    }));
+    setSelId(merged.id);
+  }, [selId, rows, commit, findCell]);
+
+  const split = useCallback(() => {
+    if (!selId) return;
+    const f = findCell(selId);
+    if (!f) return;
+    const c = f.row.cells[f.ci];
+    const half = Math.floor(c.width / 2);
+    const left:  ColCell = { id: cid(), field: c.field, width: half };
+    const right: ColCell = { id: cid(), field: '', width: c.width - half };
+    commit(rows.map(r => r.id !== f.row.id ? r : {
+      ...r, cells: r.cells.flatMap((cc, i) => i === f.ci ? [left, right] : [cc]),
+    }));
+    setSelId(left.id);
+  }, [selId, rows, commit, findCell]);
+
+  const addRow = useCallback(() => {
+    commit([...rows, { id: cid(), name: `Row ${rows.length + 1}`, cells: [{ id: cid(), field: '', width: 200 }] }]);
+  }, [rows, commit]);
+
+  const removeRow = useCallback((rid: string) => {
+    if (rows.length <= 1) return;
+    commit(rows.filter(r => r.id !== rid));
+    setSelId(null);
+  }, [rows, commit]);
+
+  const moveRow = useCallback((rid: string, dir: -1 | 1) => {
+    const i = rows.findIndex(r => r.id === rid);
+    if (i < 0) return;
+    const j = i + dir;
+    if (j < 0 || j >= rows.length) return;
+    const next = [...rows];
+    [next[i], next[j]] = [next[j], next[i]];
+    commit(next);
+  }, [rows, commit]);
+
+  /* resize effect */
 
   useEffect(() => {
+    if (!resizing) return;
     const onMove = (e: MouseEvent) => {
-      if (resizing) {
-        const w = Math.max(30, resizing.startW + e.clientX - resizing.startX);
-        setColumns(prev => prev.map((c, i) => i === resizing.colIdx ? { ...c, width: w } : c));
-      }
+      const w = Math.max(10, resizing.sw + (e.clientX - resizing.sx));
+      liveMutate(all => {
+        for (const r of all) {
+          if (r.id === resizing.rowId) r.cells[resizing.ci].width = Math.round(w);
+        }
+      });
     };
     const onUp = () => setResizing(null);
-    if (resizing) {
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-      return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
-    }
-  }, [resizing]);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    return () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+  }, [resizing, liveMutate]);
 
-  const getCell = (col: number, row: number): RibbonCell | undefined =>
-    cells.find(c => c.col === col && c.row === row);
+  /* keyboard — use refs for stable effect */
 
-  const handleDrop = (col: number, row: number) => {
-    if (!draggingEl) return;
-    setDraggingEl(null);
-    setDropTarget(null);
-    setCells(prev => {
-      const existing = prev.find(c => c.col === col && c.row === row);
-      if (existing) {
-        return prev.map(c => c.id === existing.id ? { ...c, elementType: draggingEl.key, label: draggingEl.label } : c);
+  const selIdRef = useRef(selId);
+  selIdRef.current = selId;
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
+  const actRef = useRef({ clearCell, undo, redo });
+  actRef.current = { clearCell, undo, redo };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const { clearCell: clear, undo: un, redo: rd } = actRef.current;
+      const rows = rowsRef.current;
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selIdRef.current) { e.preventDefault(); clear(selIdRef.current); return; }
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (!selIdRef.current) return;
+        e.preventDefault();
+        for (const r of rows) {
+          const ci = r.cells.findIndex(c => c.id === selIdRef.current);
+          if (ci >= 0) {
+            const nc = ci + (e.key === 'ArrowRight' ? 1 : -1);
+            if (nc >= 0 && nc < r.cells.length) setSelId(r.cells[nc].id);
+            break;
+          }
+        }
+        return;
       }
-      return [...prev, { id: nextCellId(), col, row, elementType: draggingEl.key, label: draggingEl.label }];
-    });
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') { e.preventDefault(); if (e.shiftKey) rd(); else un(); return; }
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); rd(); return; }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  /* helpers */
+
+  const selCell = selId ? findCell(selId) : null;
+  const totalWidth = rows.reduce((mx, r) => Math.max(mx, r.cells.reduce((s, c) => s + c.width, 0)), 0);
+
+  const getAlign = (c?: ColCell) => {
+    if (c?.align) return c.align;
+    return FIELD_MAP[c?.field || '']?.align || 'left';
   };
 
-  const handleDragStart = (el: ElementType) => {
-    setDraggingEl(el);
-  };
-
-  const removeCell = (cellId: string) => {
-    setCells(prev => prev.filter(c => c.id !== cellId));
-  };
-
-  const addColumn = (after: number) => {
-    const newCol: ColumnDef = { id: `c${Date.now()}`, width: 80 };
-    setColumns(prev => [...prev.slice(0, after + 1), newCol, ...prev.slice(after + 1)]);
-    setCells(prev => prev.map(c => c.col > after ? { ...c, col: c.col + 1 } : c));
-  };
-
-  const removeColumn = (idx: number) => {
-    if (columns.length <= 1) return;
-    setColumns(prev => prev.filter((_, i) => i !== idx));
-    setCells(prev => prev.filter(c => c.col !== idx).map(c => c.col > idx ? { ...c, col: c.col - 1 } : c));
-  };
-
-  const updateCellLabel = (id: string, label: string) => {
-    setCells(prev => prev.map(c => c.id === id ? { ...c, label } : c));
-  };
-
-  const renderRibbonPreview = () => {
-    const headerRow = cells.filter(c => c.row === 0);
-    const infoRow = cells.filter(c => c.row === 1);
-
-    return (
-      <div style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '11px', lineHeight: 1.2 }}>
-        <div style={{
-          background: '#000', color: '#fff', border: '2px solid #000',
-          maxWidth: totalWidth + 4, margin: '0 auto',
-        }}>
-          {/* Row 1: Header */}
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              <tr>
-                {columns.map((col, ci) => {
-                  const cell = headerRow.find(c => c.col === ci);
-                  return (
-                    <td key={col.id} style={{
-                      width: col.width, padding: '4px 6px',
-                      fontSize: cell ? '9pt' : '8pt', fontWeight: cell ? 700 : 400,
-                      textAlign: ci === 5 ? 'center' : 'left',
-                      borderRight: ci < columns.length - 1 ? '1px solid #52525b' : 'none',
-                    }}>
-                      {cell?.label || ''}
-                    </td>
-                  );
-                })}
-              </tr>
-            </tbody>
-          </table>
-          {/* Row 2: Info */}
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <tbody>
-              <tr>
-                {columns.map((col, ci) => {
-                  const cell = infoRow.find(c => c.col === ci);
-                  return (
-                    <td key={col.id} style={{
-                      width: col.width, padding: '2px 6px',
-                      fontSize: '8pt', fontWeight: cell ? 500 : 400,
-                      color: cell ? '#fff' : '#a1a1aa',
-                      textAlign: 'left',
-                      borderRight: ci < columns.length - 1 ? '1px solid #52525b' : 'none',
-                    }}>
-                      {(cell?.elementType === 'callTime' || cell?.elementType === 'pages') && cell.label
-                        ? cell.label
-                        : cell?.label || ''}
-                    </td>
-                  );
-                })}
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Scene preview rows */}
-        <div style={{ maxWidth: totalWidth + 4, margin: '0 auto', marginTop: 8 }}>
-          <div style={{ fontSize: '8pt', color: '#71717a', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase' }}>
-            Scene Preview
-          </div>
-          {SAMPLE_SCENES.map((s, idx) => {
-            const hasCast = cells.some(c => c.elementType === 'cast');
-            const hasSet = cells.some(c => c.elementType === 'set');
-            const hasPages = cells.some(c => c.elementType === 'pages');
-            const hasDesc = cells.some(c => c.elementType === 'description');
-            if (!hasCast && !hasSet && !hasPages && !hasDesc) return null;
-            return (
-              <div key={idx} style={{
-                border: '1px solid #d4d4d8', borderBottom: idx < SAMPLE_SCENES.length - 1 ? 'none' : '1px solid #d4d4d8',
-                padding: '3px 6px', fontSize: '8pt', background: idx % 2 ? '#fafafa' : '#fff',
-                display: 'flex', gap: 12,
-              }}>
-                <span style={{ fontWeight: 700, minWidth: 28 }}>{s.scene}</span>
-                {hasSet && <span style={{ flex: 1 }}>{s.set}</span>}
-                {hasCast && <span style={{ flex: 1 }}>{s.cast}</span>}
-                {hasPages && <span style={{ width: 70, textAlign: 'right' }}>{s.pages}</span>}
-                {hasDesc && <span style={{ flex: 2, color: '#71717a' }}>{s.desc}</span>}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
+  const getLabel = (field: string) => { if (!field) return 'Empty'; const f = FIELD_MAP[field]; return f ? f.label : field; };
 
   return (
-    <div className="h-screen flex flex-col bg-zinc-200" style={{ fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '11px' }}>
-      <div className="flex items-center justify-between px-4 py-2 bg-white border-b border-zinc-300 shadow-sm shrink-0">
-        <h1 className="text-sm font-bold text-zinc-900">Ribbon Editor</h1>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-zinc-400">{columns.length} cols, {cells.length} cells</span>
+    <div className="h-screen flex flex-col bg-zinc-50 text-zinc-900" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif' }}>
+      {/* ══ Top bar ══ */}
+      <header className="flex items-center gap-3 px-5 py-2 bg-white border-b border-zinc-200 shrink-0 select-none">
+        <LayoutGrid className="w-4 h-4 text-blue-500" />
+        <span className="text-[13px] font-semibold text-zinc-800">Ribbon Designer</span>
+        <span className="text-[11px] text-zinc-400">{placed}/{total} fields used</span>
+        <div className="flex-1" />
+        <div className="flex items-center gap-1">
+          <button onClick={undo} disabled={!canUndo}
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-zinc-100 disabled:opacity-25"
+            title="Undo (⌘Z)">
+            <Undo2 className="w-4 h-4 text-zinc-500" />
+          </button>
+          <button onClick={redo} disabled={!canRedo}
+            className="h-7 w-7 flex items-center justify-center rounded hover:bg-zinc-100 disabled:opacity-25"
+            title="Redo (⌘⇧Z)">
+            <Redo2 className="w-4 h-4 text-zinc-500" />
+          </button>
+          <div className="w-px h-5 bg-zinc-200 mx-2" />
+          <button onClick={reset}
+            className="h-7 px-3 text-[11px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 flex items-center gap-1.5">
+            <RotateCcw className="w-3 h-3" /> Reset
+          </button>
         </div>
-      </div>
+      </header>
 
+      {/* ══ Body ══ */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left: Element palette */}
-        <div className="w-[200px] shrink-0 bg-white border-r border-zinc-300 overflow-y-auto p-2">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2 px-1">
-            Elements (drag to ribbon)
-          </div>
-          <div className="space-y-0.5">
-            {AVAILABLE_ELEMENTS.map(el => (
-              <div
-                key={el.key}
-                draggable
-                onDragStart={() => handleDragStart(el)}
-                onDragEnd={() => { setDraggingEl(null); setDropTarget(null); }}
-                className="px-2 py-1.5 text-[10px] rounded cursor-grab hover:bg-zinc-100 text-zinc-600 border border-zinc-200 bg-zinc-50 active:cursor-grabbing select-none"
-              >
-                {el.label}
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* ── Left: Palette ── */}
+        <aside className="w-[240px] shrink-0 bg-white border-r border-zinc-200 overflow-y-auto">
+          <div className="p-4">
+            <div className="flex items-center gap-1.5 mb-4">
+              <Eye className="w-3.5 h-3.5 text-zinc-400" />
+              <span className="text-[11px] font-semibold text-zinc-400 uppercase tracking-wider">Fields</span>
+              <span className="ml-auto text-[10px] tabular-nums text-zinc-400">{placed}/{total}</span>
+            </div>
 
-        {/* Center: Ribbon editor canvas */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-auto p-4">
-            <div style={{ width: totalWidth + 40, margin: '0 auto' }}>
-              {/* Column headers */}
-              <div className="flex mb-0">
-                <div style={{ width: 20, }} />
-                {columns.map((col, ci) => (
-                  <div key={col.id} style={{ width: col.width }} className="relative">
-                    <div className="flex items-center justify-center gap-0.5 px-1 py-1 bg-zinc-100 border border-zinc-300 border-b-0 text-[10px] text-zinc-500">
-                      <button onClick={() => addColumn(ci)} className="p-0.5 hover:bg-zinc-200 rounded" title="Add column"><Plus className="w-2.5 h-2.5" /></button>
-                      <button onClick={() => removeColumn(ci)} className="p-0.5 hover:bg-red-100 text-red-400 rounded" title="Remove"><Trash2 className="w-2.5 h-2.5" /></button>
+            {CATEGORIES.map(cat => {
+              const items = ALL_FIELDS.filter(f => f.category === cat);
+              const catUsed = items.filter(f => used.has(f.key)).length;
+              return (
+                <div key={cat} className="mb-4">
+                  <div className="flex items-center gap-1 mb-1.5 text-left">
+                    <ChevronRight className="w-3 h-3 text-zinc-300" />
+                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wide">{cat}</span>
+                    <span className="ml-auto text-[9px] text-zinc-300">{catUsed}/{items.length}</span>
+                  </div>
+                  <div className="space-y-0.5">
+                    {items.map(f => {
+                      const inUse = used.has(f.key);
+                      const Icon = f.icon;
+                      return (
+                        <button
+                          key={f.key}
+                          onClick={() => { if (selId) assign(selId, f.key); }}
+                          draggable
+                          onDragStart={e => e.dataTransfer.setData('text/field', f.key)}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-md transition-colors flex items-center gap-2 group ${
+                            inUse
+                              ? 'bg-blue-50 ring-1 ring-inset ring-blue-200/60 text-blue-700 hover:bg-blue-100'
+                              : 'bg-zinc-50 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700'
+                          }`}
+                        >
+                          <Icon className={`w-3.5 h-3.5 shrink-0 ${inUse ? 'text-blue-400' : 'text-zinc-300'}`} />
+                          <span className="text-[11px] truncate">{f.label}</span>
+                          {inUse ? (
+                            <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+                          ) : (
+                            <GripHorizontal className="w-3 h-3 text-zinc-200 ml-auto opacity-0 group-hover:opacity-100 shrink-0" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </aside>
+
+        {/* ── Canvas ── */}
+        <div className="flex-1 overflow-auto bg-zinc-100/70 p-6">
+          <div className="max-w-[960px] mx-auto space-y-10">
+
+            {/* ══ Designer ══ */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Designer</span>
+              </div>
+
+              {/* Action bar — always visible to prevent layout jumping */}
+              <div className="flex items-center gap-1.5 mb-2 flex-wrap" style={{ minHeight: 28 }}>
+                {selCell ? (
+                  <span className="text-[10px] text-zinc-400 font-mono mr-1">{selCell.row.name} &middot; col {selCell.ci + 1} &middot; {selCell.cell.width}pt</span>
+                ) : (
+                  <span className="text-[10px] text-zinc-400 mr-1">Select a cell to edit</span>
+                )}
+                <div className="relative">
+                  <button onClick={() => selCell && setChangeOpen(o => !o)} disabled={!selCell} className="h-7 px-2.5 text-[10px] font-medium rounded-md bg-white border border-zinc-200 text-zinc-600 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1">
+                    <ArrowRightLeft className="w-3 h-3" /> Change
+                    <ChevronDown className="w-3 h-3 text-zinc-400" />
+                  </button>
+                  {changeOpen && selCell && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setChangeOpen(false)} />
+                      <div className="absolute z-50 left-0 top-full mt-1 bg-white border border-zinc-200 rounded-lg shadow-xl py-1 min-w-[160px] max-h-[300px] overflow-y-auto">
+                        {ALL_FIELDS.filter(f => !used.has(f.key) || f.key === selCell.cell.field).map(f => {
+                          const Icon = f.icon;
+                          return (
+                            <button key={f.key}
+                              onClick={() => { assign(selId!, f.key); setChangeOpen(false); }}
+                              className={`w-full text-left px-2.5 py-1.5 text-[10px] hover:bg-zinc-50 flex items-center gap-2 ${f.key === selCell.cell.field ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-600'}`}>
+                              <Icon className="w-3 h-3" /> {f.label}
+                            </button>
+                          );
+                        })}
+                        {selCell.cell.field && (
+                          <button onClick={() => { clearCell(selId!); setChangeOpen(false); }}
+                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2 border-t border-zinc-100 pt-1.5">
+                            <Trash2 className="w-3 h-3" /> Remove field
+                          </button>
+                        )}
+                        {selCell.row.cells.length > 1 && (
+                          <button onClick={() => { removeCell(selCell.row.id, selCell.ci); setChangeOpen(false); }}
+                            className="w-full text-left px-2.5 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2">
+                            <Trash2 className="w-3 h-3" /> Delete cell
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+                <button onClick={() => selCell && clearCell(selId!)} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-red-50 hover:border-red-200 hover:text-red-500 disabled:opacity-30 flex items-center gap-1.5">
+                  <Trash2 className="w-3 h-3" /> Clear
+                </button>
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
+                <button onClick={merge} disabled={!selCell || selCell.ci >= selCell.row.cells.length - 1} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Merge with next cell">
+                  <Columns className="w-3 h-3" /> Merge &rarr;
+                </button>
+                <button onClick={split} disabled={!selCell} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5" title="Split into two cells">
+                  <SplitSquareVertical className="w-3 h-3" /> Split
+                </button>
+                <button onClick={() => selCell && removeCell(selCell.row.id, selCell.ci)} disabled={!selCell || (selCell ? selCell.row.cells.length <= 1 : true)} className="h-7 px-2.5 text-[10px] rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-30 flex items-center gap-1.5">
+                  <Trash2 className="w-3 h-3" /> Delete Cell
+                </button>
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
+                <button onClick={() => selCell && moveCell(selCell.row.id, selCell.ci, -1)} disabled={!selCell || selCell.ci === 0} className="h-7 w-7 rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-25 flex items-center justify-center" title="Move left">
+                  <ArrowLeft className="w-3 h-3" />
+                </button>
+                <button onClick={() => selCell && moveCell(selCell.row.id, selCell.ci, 1)} disabled={!selCell || selCell.ci >= selCell.row.cells.length - 1} className="h-7 w-7 rounded-md bg-white border border-zinc-200 text-zinc-500 hover:bg-zinc-50 disabled:opacity-25 flex items-center justify-center" title="Move right">
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+                <div className="w-px h-4 bg-zinc-200 mx-1" />
+                {(['left', 'center', 'right'] as const).map(a => {
+                  const Icon = a === 'left' ? AlignLeft : a === 'center' ? AlignCenter : AlignRight;
+                  const active = selCell?.cell.align === a || (!selCell?.cell.align && getAlign(selCell?.cell) === a);
+                  return (
+                    <button key={a}
+                      onClick={() => selCell && setAlign(selId!, active ? undefined : a)}
+                      disabled={!selCell}
+                      className={`h-7 w-7 rounded-md border flex items-center justify-center disabled:opacity-25 ${
+                        active ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
+                      }`}
+                      title={`Align ${a}${active ? ' (click to reset)' : ''}`}>
+                      <Icon className="w-3 h-3" />
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Ribbon rows */}
+              <div className="space-y-5">
+                {rows.map((row, ri) => (
+                  <div key={row.id} className="group/row">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-semibold text-zinc-500 select-none">{row.name}</span>
+                      <span className="text-[9px] text-zinc-300 select-none">{row.cells.length}c &middot; {row.cells.reduce((s, c) => s + c.width, 0)}pt</span>
+                      <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover/row:opacity-100 transition-opacity">
+                        <button onClick={() => moveRow(row.id, -1)} disabled={ri === 0}
+                          className="p-1 rounded hover:bg-zinc-200 disabled:opacity-20"><ArrowUp className="w-3 h-3 text-zinc-400" /></button>
+                        <button onClick={() => moveRow(row.id, 1)} disabled={ri === rows.length - 1}
+                          className="p-1 rounded hover:bg-zinc-200 disabled:opacity-20"><ArrowDown className="w-3 h-3 text-zinc-400" /></button>
+                        {rows.length > 1 && (
+                          <button onClick={() => removeRow(row.id)}
+                            className="p-1 rounded hover:bg-red-100"><Trash2 className="w-3 h-3 text-zinc-300 hover:text-red-400" /></button>
+                        )}
+                      </div>
                     </div>
-                    <div
-                      className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 z-10"
-                      onMouseDown={e => { e.preventDefault(); setResizing({ colIdx: ci, startX: e.clientX, startW: col.width }); }}
-                    />
+
+                    <div className="relative" style={{
+                      fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
+                      border: '2px solid #000', background: STYLE.bg, color: STYLE.fg,
+                      minWidth: Math.max(349, totalWidth),
+                    }}>
+                      {row.cells.length === 0 ? (
+                        <div className="py-3 text-center text-[10px] text-zinc-400">
+                          Empty &mdash; click <Plus className="w-2.5 h-2.5 inline text-zinc-400" /> below to add cells
+                        </div>
+                      ) : (
+                        row.cells.map((c, ci) => {
+                          const assigned = Boolean(c.field);
+                          const isSel    = selId === c.id;
+                          const align    = getAlign(c);
+                          const label    = getLabel(c.field);
+
+                          return (
+                            <div key={c.id} className="relative inline-block align-top group/cell" style={{ width: c.width }}>
+                              <div
+                                onClick={() => setSelId(c.id)}
+                                onDoubleClick={() => { setSelId(c.id); setChangeOpen(true); }}
+                                onContextMenu={e => { e.preventDefault(); setSelId(c.id); setChangeOpen(true); }}
+                                onDragOver={e => e.preventDefault()}
+                                onDrop={e => { e.preventDefault(); const k = e.dataTransfer.getData('text/field'); if (k) assign(c.id, k); }}
+                                className="relative cursor-pointer select-none transition-colors"
+                                style={{
+                                  padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
+                                  verticalAlign: ri === 0 ? 'top' : 'middle',
+                                  borderRight: ci < row.cells.length - 1 ? '1px solid #000' : 'none',
+                                  borderBottom: '1px solid #000',
+                                  outline: isSel ? '2px solid #3b82f6' : 'none', outlineOffset: -1,
+                                  background: isSel ? 'rgba(59,130,246,0.06)' : 'transparent',
+                                  minHeight: 16,
+                                }}
+                              >
+                                <div style={{
+                                  textAlign: align, fontSize: '8pt', lineHeight: 1.1,
+                                  fontWeight: c.field === 'sceneNumber' ? 700 : 500,
+                                  whiteSpace: align === 'left' ? 'normal' : 'nowrap',
+                                  overflow: 'hidden', textOverflow: 'ellipsis',
+                                  textTransform: c.field === 'set' ? 'uppercase' : 'none',
+                                  color: assigned ? undefined : '#d4d4d8',
+                                }}>
+                                  {assigned ? label : 'Empty'}
+                                </div>
+                              </div>
+
+                              {/* Resize handle */}
+                              <div
+                                onMouseDown={e => { e.preventDefault(); e.stopPropagation(); setResizing({ rowId: row.id, ci, sx: e.clientX, sw: c.width }); }}
+                                className="absolute right-0 top-0 bottom-0 w-[6px] cursor-col-resize z-10 group/h"
+                              >
+                                <div className="absolute right-0 top-1 bottom-1 w-[2px] bg-zinc-200 group-hover/h:bg-blue-400 transition-colors rounded-full" />
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+
+                      {/* Add cell button — inline at end */}
+                      <button onClick={() => addCell(row.id, row.cells.length - 1)}
+                        className="inline-block align-top cursor-pointer hover:bg-blue-50 transition-colors"
+                        style={{
+                          padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
+                          verticalAlign: ri === 0 ? 'top' : 'middle',
+                          borderBottom: '1px solid #000',
+                          minHeight: 16, minWidth: 28,
+                        }}
+                      ><Plus className="w-3 h-3 text-zinc-400 hover:text-blue-500 mx-auto" /></button>
+                    </div>
                   </div>
                 ))}
               </div>
 
-              {/* Ribbon rows */}
-              {[0, 1].map(row => (
-                <div key={row} className="flex" style={{ minHeight: row === 0 ? 36 : 28 }}>
-                  <div className="flex items-center justify-center text-[10px] text-zinc-400 font-bold uppercase" style={{ width: 20, writingMode: 'vertical-lr' }}>
-                    {row === 0 ? 'HDR' : 'INFO'}
-                  </div>
-                  {columns.map((col, ci) => {
-                    const cell = getCell(ci, row);
-                    const isTarget = dropTarget?.col === ci && dropTarget?.row === row;
-                    return (
-                      <div
-                        key={`${col.id}-${row}`}
-                        style={{ width: col.width }}
-                        className={`border border-zinc-200 p-0.5 relative transition-colors
-                          ${isTarget ? 'bg-blue-50 border-blue-400' : row === 0 ? 'bg-zinc-900 border-zinc-700' : 'bg-zinc-700 border-zinc-600'}
-                          ${selectedCol === ci ? 'ring-1 ring-blue-400' : ''}`}
-                        onDragOver={e => { e.preventDefault(); setDropTarget({ col: ci, row }); }}
-                        onDragLeave={() => setDropTarget(null)}
-                        onDrop={() => handleDrop(ci, row)}
-                        onClick={() => { setSelectedCol(ci); if (cell) setEditingCell(cell.id); }}
-                      >
-                        {cell ? (
-                          <div className="flex items-start gap-0.5">
-                            {editingCell === cell.id ? (
-                              <input
-                                autoFocus
-                                value={cell.label}
-                                onChange={e => updateCellLabel(cell.id, e.target.value)}
-                                onBlur={() => setEditingCell(null)}
-                                onKeyDown={e => { if (e.key === 'Enter') setEditingCell(null); }}
-                                className={`w-full bg-transparent outline-none text-[9px] px-0.5 py-0.5 ${row === 0 ? 'text-white' : 'text-white'}`}
-                              />
-                            ) : (
-                              <span
-                                className={`flex-1 text-[9px] truncate cursor-text ${row === 0 ? 'text-white' : 'text-zinc-200'}`}
-                                onDoubleClick={() => setEditingCell(cell.id)}
-                              >
-                                {cell.label || `(${cell.elementType})`}
-                              </span>
-                            )}
-                            <button onClick={() => removeCell(cell.id)} className="shrink-0 p-0.5 opacity-40 hover:opacity-100 text-red-400"><X className="w-2.5 h-2.5" /></button>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-[9px] text-zinc-500 opacity-30">
-                            <span className="truncate">{isTarget && draggingEl ? draggingEl.label : 'drop'}</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
+              <button onClick={addRow} className="mt-5 w-full py-2.5 text-[10px] font-medium rounded-lg border-2 border-dashed border-zinc-200 text-zinc-400 hover:border-zinc-300 hover:text-zinc-500 hover:bg-zinc-50/50 transition-colors flex items-center justify-center gap-1.5">
+                <Plus className="w-3.5 h-3.5" /> Add Row
+              </button>
+            </section>
 
-              {/* Editing help */}
-              <div className="mt-2 text-[9px] text-zinc-400">
-                Drag elements from the left panel into cells. Double-click to edit labels. Drag column edges to resize.
+            {/* ══ Live Preview ══ */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Eye className="w-3.5 h-3.5 text-zinc-400" />
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Live Preview</span>
+                <span className="ml-auto text-[9px] text-zinc-400">Sample data</span>
               </div>
-            </div>
-          </div>
 
-          {/* Bottom: Live preview */}
-          <div className="shrink-0 bg-white border-t border-zinc-300 p-4 max-h-[320px] overflow-auto">
-            <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Live Preview</div>
-            {renderRibbonPreview()}
+              <div className="inline-block shadow-lg ring-1 ring-zinc-200 rounded overflow-hidden" style={{
+                fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
+                border: '2px solid #000', background: STYLE.bg, color: STYLE.fg,
+              }}>
+                {rows.map((row, ri) => (
+                  <div key={row.id} style={{ borderBottom: ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none' }}>
+                    {row.cells.map((c, ci) => {
+                      const align = getAlign(c);
+                      const val = c.field ? (cellValue(c.field) || '\u00A0') : '\u00A0';
+                      return (
+                        <div key={c.id} className="inline-block" style={{
+                          width: c.width, textAlign: align,
+                          padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
+                          verticalAlign: ri === 0 ? 'top' : 'middle',
+                          borderRight: ci < row.cells.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
+                          whiteSpace: align === 'left' ? 'normal' : 'nowrap',
+                          overflow: 'hidden', textOverflow: 'ellipsis',
+                          fontSize: '8pt', lineHeight: 1.1,
+                          fontWeight: c.field === 'sceneNumber' ? 700 : 400,
+                          textTransform: c.field === 'set' ? 'uppercase' : 'none',
+                        }}>
+                          {val}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </section>
           </div>
-        </div>
-
-        {/* Right: Column widths */}
-        <div className="w-[120px] shrink-0 bg-white border-l border-zinc-300 overflow-y-auto p-2">
-          <div className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider mb-2">Widths</div>
-          {columns.map((col, ci) => (
-            <div key={col.id} className="flex items-center gap-1 mb-1">
-              <span className="text-[9px] text-zinc-400 w-6">{ci + 1}</span>
-              <input
-                type="number"
-                value={col.width}
-                onChange={e => {
-                  const w = Math.max(20, parseInt(e.target.value) || 20);
-                  setColumns(prev => prev.map((c, i) => i === ci ? { ...c, width: w } : c));
-                }}
-                className="w-full border border-zinc-200 rounded px-1 py-0.5 text-[10px]"
-              />
-            </div>
-          ))}
         </div>
       </div>
     </div>
