@@ -6,13 +6,13 @@ import {
   Plus, Trash2, GripHorizontal,
   ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
-  AlignCenter, AlignRight, WrapText, Grid3X3, Type, Minus,
+  AlignCenter, AlignRight, WrapText, Grid3X3, Type,
 } from 'lucide-react';
 
 /* ── Types & Data ─────────────────────────────────── */
 
 interface FieldDef { key: string; label: string; defaultWidth: number; align: 'left' | 'center' | 'right'; icon: React.ElementType; category: string; defaultSuffix?: string; }
-interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; wrap?: boolean; prefix?: string; suffix?: string; textContent?: string; valign?: 'top' | 'middle' | 'bottom'; }
+interface ColCell  { id: string; field: string; width: number; align?: 'left' | 'center' | 'right'; wrap?: boolean; prefix?: string; suffix?: string; textContent?: string; }
 interface RowConfig { id: string; name: string; cells: ColCell[]; }
 interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
 
@@ -340,12 +340,6 @@ export default function App() {
     })));
   }, [rows, commit]);
 
-  const setVAlign = useCallback((cellId: string, valign: 'top' | 'middle' | 'bottom' | undefined) => {
-    commit(rows.map(r => ({
-      ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, valign } : c),
-    })));
-  }, [rows, commit]);
-
   const setAffix = useCallback((cellId: string, key: 'prefix' | 'suffix', value: string) => {
     commit(rows.map(r => ({
       ...r, cells: r.cells.map(c => c.id === cellId ? { ...c, [key]: value || undefined } : c),
@@ -479,8 +473,6 @@ export default function App() {
     if (c?.align) return c.align;
     return FIELD_MAP[c?.field || '']?.align || 'left';
   };
-
-  const getVAlign = (c?: ColCell) => c?.valign || 'middle';
 
   const getLabel = (field: string) => { if (!field) return 'Empty'; const f = FIELD_MAP[field]; return f ? f.label : field; };
 
@@ -657,21 +649,6 @@ export default function App() {
                     </button>
                   );
                 })}
-                {(['top', 'middle', 'bottom'] as const).map(a => {
-                  const Icon = a === 'top' ? ArrowUp : a === 'middle' ? Minus : ArrowDown;
-                  const active = selCell?.cell.valign === a || (!selCell?.cell.valign && getVAlign(selCell?.cell) === a);
-                  return (
-                    <button key={'v' + a}
-                      onClick={() => selCell && setVAlign(selId!, active ? undefined : a)}
-                      disabled={!selCell}
-                      className={`h-7 w-7 rounded-md border flex items-center justify-center disabled:opacity-25 ${
-                        active ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-zinc-200 text-zinc-400 hover:bg-zinc-50'
-                      }`}
-                      title={`V-align ${a}${active ? ' (click to reset)' : ''}`}>
-                      <Icon className="w-3 h-3" />
-                    </button>
-                  );
-                })}
                 <div className="w-px h-4 bg-zinc-200 mx-1" />
                 <button onClick={() => selCell && setWrapCell(selId!, !selCell.cell.wrap)}
                   disabled={!selCell}
@@ -746,7 +723,7 @@ export default function App() {
                                 className={`inline-block align-top ${betweenDrop === `${row.id}-${ci}` ? 'w-[4pt] bg-blue-400 min-w-[4pt]' : ''}`}
                                 style={{ height: 16 }}
                               />
-                              <div className="relative inline-block align-top group/cell" style={{ width: c.width + 'pt' }}
+                              <div className="relative inline-block group/cell" style={{ width: c.width + 'pt', verticalAlign: 'middle' }}
                               ref={el => { if (el) cellRefs.current.set(c.id, el); else cellRefs.current.delete(c.id); }}
                             >
                               <div
@@ -784,7 +761,7 @@ export default function App() {
                                 className="relative cursor-pointer select-none transition-colors"
                                 style={{
                                   padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
-                                  verticalAlign: getVAlign(c),
+                                  verticalAlign: 'middle',
                                   borderRight: ci < row.cells.length - 1 ? '1px solid #000' : 'none',
                                   borderBottom: '1px solid #000',
                                   borderLeft: cellDropTarget === c.id ? '3px solid #3b82f6' : 'none',
@@ -888,7 +865,7 @@ export default function App() {
                         <div key={c.id} className="inline-block" style={{
                           width: c.width + 'pt', textAlign: align,
                           padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
-                          verticalAlign: getVAlign(c),
+                          verticalAlign: 'middle',
                           borderRight: ci < row.cells.length - 1 ? (showGrid ? '1px solid rgba(0,0,0,0.12)' : `1px solid ${STYLE.bg}`) : 'none',
                           whiteSpace: c.wrap ? 'normal' : 'nowrap',
                           overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
