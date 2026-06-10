@@ -7,6 +7,7 @@ import {
   ChevronRight, Eye, ArrowRightLeft, RotateCcw, ArrowUp, ArrowDown,
   Undo2, Redo2, LayoutGrid, ChevronDown, ArrowLeft, ArrowRight,
   AlignCenter, AlignRight, WrapText, Grid3X3, Type,
+  Download, Upload,
 } from 'lucide-react';
 
 /* ── Types & Data ─────────────────────────────────── */
@@ -251,6 +252,41 @@ export default function App() {
       }
     }
   }, [designs, activeId, saveDesigns, replace]);
+
+  const exportDesign = useCallback(() => {
+    const data = JSON.stringify({ name: activeDesign?.name || 'Untitled', rows: cloneRows(rows) }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${activeDesign?.name || 'ribbon'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [rows, activeDesign]);
+
+  const importDesign = useCallback(() => {
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = '.json';
+    input.onchange = () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result as string);
+          if (data.rows && Array.isArray(data.rows)) {
+            const id = `d${Date.now()}`;
+            const d: RibbonDesign = { id, name: data.name || 'Imported', rows: data.rows, createdAt: Date.now() };
+            saveDesigns([...designs, d]);
+            setActiveId(id);
+            localStorage.setItem('ribbon_active_id', id);
+            replace(data.rows);
+          }
+        } catch { alert('Invalid design file'); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }, [designs, saveDesigns, replace]);
 
   const switchDesign = useCallback((id: string) => {
     setActiveId(id);
@@ -511,6 +547,14 @@ export default function App() {
                         className="w-full text-left px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2">
                         &hellip; Rename
                       </button>
+                      <button onClick={() => { exportDesign(); setShowDesigns(false); }}
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2">
+                        <Download className="w-3 h-3" /> Export
+                      </button>
+                      <button onClick={() => { importDesign(); setShowDesigns(false); }}
+                        className="w-full text-left px-3 py-1.5 text-[10px] text-zinc-500 hover:bg-zinc-50 flex items-center gap-2">
+                        <Upload className="w-3 h-3" /> Import
+                      </button>
                       <button onClick={() => { if (confirm(`Delete "${activeDesign.name}"?`)) deleteDesign(activeId); setShowDesigns(false); }}
                         className="w-full text-left px-3 py-1.5 text-[10px] text-red-500 hover:bg-red-50 flex items-center gap-2">
                         <Trash2 className="w-3 h-3" /> Delete
@@ -693,7 +737,7 @@ export default function App() {
                     }}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
-                          Empty &mdash; click <Plus className="w-2.5 h-2.5 inline text-zinc-400" /> below to add cells
+                          Empty &mdash; use Insert After from the toolbar to add cells
                         </div>
                       ) : (
                         row.cells.map((c, ci) => {
@@ -803,7 +847,7 @@ export default function App() {
                         })
                       )}
 
-                      {/* Dropzone — add cell at end */}
+                      {/* + dropzone */}
                       <button
                         onClick={() => setSelId(addCell(row.id, row.cells.length - 1))}
                         onDragOver={e => { e.preventDefault(); if (cellDrag) setCellDropTarget('end-' + row.id); else setDropHover(row.id); }}
@@ -835,6 +879,7 @@ export default function App() {
                           minHeight: 16, minWidth: '40pt',
                         }}
                       ><Plus className={`w-3 h-3 ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? 'text-blue-500' : 'text-zinc-400'}`} /></button>
+
                     </div>
                   </div>
                 ))}
