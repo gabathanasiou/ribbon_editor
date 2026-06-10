@@ -608,7 +608,7 @@ export default function App() {
                 <span className="ml-auto text-[9px] text-zinc-400">Sample data</span>
               </div>
 
-              <div className="inline-block shadow-lg ring-1 ring-zinc-200 rounded overflow-hidden" style={{
+              <div className="inline-block shadow-lg ring-1 ring-zinc-200 rounded" style={{
                 fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                 border: '2px solid #000', background: STYLE.bg, color: STYLE.fg,
               }}>
