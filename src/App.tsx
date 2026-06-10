@@ -18,34 +18,34 @@ interface RowConfig { id: string; name: string; cells: ColCell[]; }
 interface RibbonDesign { id: string; name: string; rows: RowConfig[]; createdAt: number; }
 
 const ALL_FIELDS: FieldDef[] = [
-  // Percentages proportional to PrintSchedule pt widths (Row 1 total = 359pt, scaled to 100%)
-  { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 4.18, align: 'center', icon: Hash,        category: 'Scene Info' },
-  { key: 'callTime',    label: 'Call Time',  defaultWidth: 8.36, align: 'left',   icon: Clock,       category: 'Shooting' },
-  { key: 'duration',    label: 'Duration',   defaultWidth: 8.36, align: 'left',   icon: Timer,       category: 'Shooting' },
-  { key: 'intExt',      label: 'I/E',        defaultWidth: 9.47, align: 'left',   icon: MapPin,      category: 'Shooting' },
-  { key: 'set',         label: 'Set',        defaultWidth: 33.43,align: 'left',   icon: Building2,   category: 'Shooting' },
-  { key: 'dayNight',    label: 'D/N',        defaultWidth: 11.14,align: 'left',   icon: Sun,         category: 'Shooting' },
-  { key: 'cast',        label: 'Cast',       defaultWidth: 15.60,align: 'left',   icon: Users,       category: 'Cast & Talent' },
-  { key: 'pages',       label: 'Pages',      defaultWidth: 9.47, align: 'left',   icon: FileText,    category: 'Scene Info', defaultSuffix: 'pgs' },
-  { key: 'description', label: 'Synopsis',   defaultWidth: 79.11,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
-  { key: 'scriptDay',   label: 'Script Day', defaultWidth: 11.14,align: 'left',   icon: Calendar,    category: 'Production' },
-  { key: 'location',    label: 'Location',   defaultWidth: 22.28,align: 'left',   icon: MapPin,      category: 'Production' },
-  { key: 'notes',       label: 'Notes',      defaultWidth: 22.28,align: 'left',   icon: StickyNote,  category: 'Production' },
-  { key: 'extras',      label: 'BG Artists', defaultWidth: 16.71,align: 'left',   icon: UserPlus,    category: 'Cast & Talent' },
-  { key: 'stunts',      label: 'Stunts',     defaultWidth: 16.71,align: 'left',   icon: Sparkles,    category: 'Cast & Talent' },
-  { key: 'vehicles',    label: 'Vehicles',   defaultWidth: 16.71,align: 'left',   icon: Car,         category: 'Breakdown' },
-  { key: 'props',       label: 'Props',      defaultWidth: 16.71,align: 'left',   icon: Package,     category: 'Breakdown' },
-  { key: 'wardrobe',    label: 'Wardrobe',   defaultWidth: 16.71,align: 'left',   icon: Shirt,       category: 'Breakdown' },
-  { key: 'makeup',      label: 'Makeup',     defaultWidth: 16.71,align: 'left',   icon: Scissors,    category: 'Breakdown' },
-  { key: 'sfx',         label: 'SFX',        defaultWidth: 16.71,align: 'left',   icon: Volume1,     category: 'VFX & Audio' },
-  { key: 'vfx',         label: 'VFX',        defaultWidth: 16.71,align: 'left',   icon: Video,       category: 'VFX & Audio' },
-  { key: 'sound',       label: 'Sound',      defaultWidth: 16.71,align: 'left',   icon: Volume2,     category: 'VFX & Audio' },
-  { key: 'music',       label: 'Music',      defaultWidth: 16.71,align: 'left',   icon: Music,       category: 'VFX & Audio' },
-  { key: 'animals',     label: 'Animals',    defaultWidth: 16.71,align: 'left',   icon: PawPrint,    category: 'Misc' },
-  { key: 'weapons',     label: 'Weapons',    defaultWidth: 16.71,align: 'left',   icon: Sword,       category: 'Misc' },
-  { key: 'greenery',    label: 'Greenery',   defaultWidth: 16.71,align: 'left',   icon: Leaf,        category: 'Misc' },
-  { key: 'artDept',     label: 'Art Dept',   defaultWidth: 16.71,align: 'left',   icon: PaintBucket, category: 'Misc' },
-  { key: 'text',        label: 'Text',        defaultWidth: 27.86,align: 'left',   icon: Type,        category: 'Special' },
+  // Percentages proportional to PrintSchedule pt widths (Row 1 = Scene#15 + Call20 + Dur30 + I/E34 + Set120 + D/N40 + Cast56 + Pages34 = 349pt → 100%)
+  { key: 'sceneNumber', label: 'Scene #',   defaultWidth: 4.30, align: 'center', icon: Hash,        category: 'Scene Info' },
+  { key: 'callTime',    label: 'Call Time',  defaultWidth: 5.73, align: 'left',   icon: Clock,       category: 'Shooting' },
+  { key: 'duration',    label: 'Duration',   defaultWidth: 8.60, align: 'left',   icon: Timer,       category: 'Shooting' },
+  { key: 'intExt',      label: 'I/E',        defaultWidth: 9.74, align: 'left',   icon: MapPin,      category: 'Shooting' },
+  { key: 'set',         label: 'Set',        defaultWidth: 34.38,align: 'left',   icon: Building2,   category: 'Shooting' },
+  { key: 'dayNight',    label: 'D/N',        defaultWidth: 11.46,align: 'left',   icon: Sun,         category: 'Shooting' },
+  { key: 'cast',        label: 'Cast',       defaultWidth: 16.05,align: 'left',   icon: Users,       category: 'Cast & Talent' },
+  { key: 'pages',       label: 'Pages',      defaultWidth: 9.74, align: 'left',   icon: FileText,    category: 'Scene Info', defaultSuffix: 'pgs' },
+  { key: 'description', label: 'Synopsis',   defaultWidth: 81.38,align: 'left',   icon: AlignLeft,   category: 'Scene Info' },
+  { key: 'scriptDay',   label: 'Script Day', defaultWidth: 11.46,align: 'left',   icon: Calendar,    category: 'Production' },
+  { key: 'location',    label: 'Location',   defaultWidth: 22.92,align: 'left',   icon: MapPin,      category: 'Production' },
+  { key: 'notes',       label: 'Notes',      defaultWidth: 22.92,align: 'left',   icon: StickyNote,  category: 'Production' },
+  { key: 'extras',      label: 'BG Artists', defaultWidth: 17.19,align: 'left',   icon: UserPlus,    category: 'Cast & Talent' },
+  { key: 'stunts',      label: 'Stunts',     defaultWidth: 17.19,align: 'left',   icon: Sparkles,    category: 'Cast & Talent' },
+  { key: 'vehicles',    label: 'Vehicles',   defaultWidth: 17.19,align: 'left',   icon: Car,         category: 'Breakdown' },
+  { key: 'props',       label: 'Props',      defaultWidth: 17.19,align: 'left',   icon: Package,     category: 'Breakdown' },
+  { key: 'wardrobe',    label: 'Wardrobe',   defaultWidth: 17.19,align: 'left',   icon: Shirt,       category: 'Breakdown' },
+  { key: 'makeup',      label: 'Makeup',     defaultWidth: 17.19,align: 'left',   icon: Scissors,    category: 'Breakdown' },
+  { key: 'sfx',         label: 'SFX',        defaultWidth: 17.19,align: 'left',   icon: Volume1,     category: 'VFX & Audio' },
+  { key: 'vfx',         label: 'VFX',        defaultWidth: 17.19,align: 'left',   icon: Video,       category: 'VFX & Audio' },
+  { key: 'sound',       label: 'Sound',      defaultWidth: 17.19,align: 'left',   icon: Volume2,     category: 'VFX & Audio' },
+  { key: 'music',       label: 'Music',      defaultWidth: 17.19,align: 'left',   icon: Music,       category: 'VFX & Audio' },
+  { key: 'animals',     label: 'Animals',    defaultWidth: 17.19,align: 'left',   icon: PawPrint,    category: 'Misc' },
+  { key: 'weapons',     label: 'Weapons',    defaultWidth: 17.19,align: 'left',   icon: Sword,       category: 'Misc' },
+  { key: 'greenery',    label: 'Greenery',   defaultWidth: 17.19,align: 'left',   icon: Leaf,        category: 'Misc' },
+  { key: 'artDept',     label: 'Art Dept',   defaultWidth: 17.19,align: 'left',   icon: PaintBucket, category: 'Misc' },
+  { key: 'text',        label: 'Text',        defaultWidth: 28.65,align: 'left',   icon: Type,        category: 'Special' },
 ];
 
 const FIELD_MAP = Object.fromEntries(ALL_FIELDS.map(f => [f.key, f]));
@@ -97,10 +97,10 @@ function mkRow(name: string, keys: string[]): RowConfig {
 
 const DEFAULT_ROWS = (): RowConfig[] => [
   mkRow('Row 1', ['sceneNumber','callTime','duration','intExt','set','dayNight','cast','pages']),
-  // Row 2: empty spacer aligns description start under I/E (Scene# + Call + Dur = 20.9%)
+  // Row 2: empty spacer aligns description start under I/E (Scene# 4.18 + Call 6 + Dur 8.36 = 18.54%)
   { id: cid(), name: 'Row 2', cells: [
-    { id: cid(), field: '', width: 20.9 },
-    { id: cid(), field: 'description', width: 79.1, suffix: undefined },
+    { id: cid(), field: '', width: 18.54 },
+    { id: cid(), field: 'description', width: 81.46, suffix: undefined },
   ]},
 ];
 
@@ -199,6 +199,27 @@ export default function App() {
   const [cellDropTarget, setCellDropTarget] = useState<string | null>(null);
   const [betweenDrop, setBetweenDrop] = useState<string | null>(null);
   const cellRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const lastSpacerSync = useRef(0);
+
+  /* auto-sync Row 2 spacer with Row 1 first 3 cells */
+  useEffect(() => {
+    const r1 = rows[0];
+    const r2 = rows[1];
+    if (!r1 || !r2 || r2.cells.length < 2) return;
+    const sw = r1.cells.slice(0, 3).reduce((s, c) => s + c.width, 0);
+    if (Math.abs(r2.cells[0].width - sw) < 0.01) return;
+    if (Math.abs(lastSpacerSync.current - sw) < 0.01) return;
+    lastSpacerSync.current = sw;
+    liveMutate(all => {
+      const a = all[0]?.cells;
+      const b = all[1]?.cells;
+      if (a && b && b.length >= 2) {
+        const w = Math.round(a.slice(0, 3).reduce((s, c) => s + c.width, 0) * 100) / 100;
+        b[0].width = w;
+        b[1].width = Math.max(MIN_PCT, Math.round((100 - w) * 100) / 100);
+      }
+    });
+  }, [rows, liveMutate]);
 
   React.useEffect(() => { setChangeOpen(false); }, [selId]);
 
