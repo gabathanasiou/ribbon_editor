@@ -97,7 +97,11 @@ function mkRow(name: string, keys: string[]): RowConfig {
 
 const DEFAULT_ROWS = (): RowConfig[] => [
   mkRow('Row 1', ['sceneNumber','callTime','duration','intExt','set','dayNight','cast','pages']),
-  mkRow('Row 2', ['description']),
+  // Row 2: empty spacer aligns description start under I/E (Scene# + Call + Dur = 20.9%)
+  { id: cid(), name: 'Row 2', cells: [
+    { id: cid(), field: '', width: 20.9 },
+    { id: cid(), field: 'description', width: 79.1, suffix: undefined },
+  ]},
 ];
 
 function cellValue(field: string): string {
@@ -189,7 +193,7 @@ export default function App() {
   const [resizing, setResizing] = useState<{ rowId: string; ci: number; sx: number; a: number; b: number } | null>(null);
   const [changeOpen, setChangeOpen] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [showGrid, setShowGrid] = useState(false);
+  const [showGrid, setShowGrid] = useState(true);
   const [dropHover, setDropHover] = useState<string | null>(null);
   const [cellDrag, setCellDrag]   = useState<{ rowId: string; cellId: string } | null>(null);
   const [cellDropTarget, setCellDropTarget] = useState<string | null>(null);
