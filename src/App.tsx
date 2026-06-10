@@ -547,7 +547,7 @@ export default function App() {
                                 <div style={{
                                   textAlign: align, fontSize: '8pt', lineHeight: 1.1,
                                   fontWeight: c.field === 'sceneNumber' ? 700 : 500,
-                                  whiteSpace: align === 'left' ? 'normal' : 'nowrap',
+                                  whiteSpace: 'nowrap',
                                   overflow: ci < row.cells.length - 1 ? 'hidden' : 'visible',
                                   textOverflow: ci < row.cells.length - 1 ? 'ellipsis' : 'clip',
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
@@ -623,7 +623,7 @@ export default function App() {
                           padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                           verticalAlign: ri === 0 ? 'top' : 'middle',
                           borderRight: ci < row.cells.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
-                          whiteSpace: align === 'left' ? 'normal' : 'nowrap',
+                          whiteSpace: 'nowrap',
                           overflow: ci < row.cells.length - 1 ? 'hidden' : 'visible',
                           textOverflow: ci < row.cells.length - 1 ? 'ellipsis' : 'clip',
                           fontSize: '8pt', lineHeight: 1.1,
