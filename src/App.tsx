@@ -695,7 +695,7 @@ export default function App() {
 
         {/* ── Canvas ── */}
         <div className="flex-1 overflow-auto bg-zinc-100/70 p-8">
-          <div className="max-w-[960px] mx-auto px-10 space-y-10">
+          <div className="max-w-[960px] mx-auto pr-8 space-y-10">
 
             {/* ══ Designer ══ */}
             <section>
@@ -785,8 +785,8 @@ export default function App() {
                     <div className="relative" style={{
                       fontFamily: 'Helvetica, Arial, sans-serif', fontSize: '8pt', lineHeight: '1.1',
                       border: '1px solid #000', background: STYLE.bg, color: STYLE.fg,
-                      width: '100%', display: 'flex', alignItems: 'stretch',
                     }} data-row={row.id}>
+                      <div style={{ display: 'flex', width: '100%', alignItems: 'stretch' }}>
                       {row.cells.length === 0 ? (
                         <div className="py-3 text-center text-[10px] text-zinc-400">
                           Empty &mdash; use Insert After from the toolbar to add cells
@@ -900,6 +900,7 @@ export default function App() {
                           );
                         })
                       )}
+                      </div>
 
                       {/* + dropzone */}
                       <button
@@ -924,13 +925,11 @@ export default function App() {
                           if (k) setSelId(insertCellAt(row.id, row.cells.length, k));
                           else setSelId(addCell(row.id, row.cells.length - 1));
                         }}
-                        className={`inline-block align-top cursor-pointer transition-colors ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
+                        className={`absolute right-0 top-1/2 -translate-y-1/2 cursor-pointer transition-colors z-20 ${dropHover === row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : cellDropTarget === 'end-' + row.id ? 'bg-blue-100 ring-2 ring-blue-400 ring-inset' : 'hover:bg-blue-50'}`}
                         style={{
-                          padding: ri === 0 ? '3pt 6pt' : '0 6pt 3pt 6pt',
-                          verticalAlign: 'middle',
-                          borderBottom: '1px solid #000',
-                          borderLeft: `2px dashed ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? '#3b82f6' : '#d4d4d8'}`,
-                          minHeight: 16, minWidth: '40pt',
+                          minHeight: 16, minWidth: '28pt',
+                          border: `2px dashed ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? '#3b82f6' : '#d4d4d8'}`,
+                          background: 'rgba(255,255,255,0.85)',
                         }}
                       ><Plus className={`w-3 h-3 ${dropHover === row.id || cellDropTarget === 'end-' + row.id ? 'text-blue-500' : 'text-zinc-400'}`} /></button>
 
