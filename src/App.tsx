@@ -855,7 +855,7 @@ export default function App() {
                                 }}
                                 className="relative cursor-pointer select-none transition-colors"
                                 style={{
-                                  padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
+                                  padding: ri === 0 ? '3pt 4pt' : '0 4pt 3pt 4pt',
                                   verticalAlign: 'middle',
                                   borderRight: ci < row.cells.length - 1 ? '1px solid #000' : 'none',
                                   borderBottom: '1px solid #000',
@@ -968,7 +968,7 @@ export default function App() {
                       return (
                         <div key={c.id} style={{
                           flex: `0 0 ${c.width}%`, minWidth: 0, textAlign: align,
-                          padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
+                          padding: ri === 0 ? '3pt 4pt' : '0 4pt 3pt 4pt',
                           verticalAlign: 'middle',
                           borderRight: ci < row.cells.length - 1 ? (showGrid ? '1px solid rgba(0,0,0,0.12)' : `1px solid ${STYLE.bg}`) : 'none',
                           overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
