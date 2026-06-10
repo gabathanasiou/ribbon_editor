@@ -762,7 +762,7 @@ export default function App() {
               }}>
                 {rows.map((row, ri) => (
                   <div key={row.id} style={{
-                    borderBottom: showGrid && ri < rows.length - 1 ? '0.5px solid rgba(0,0,0,0.08)' : 'none',
+                    borderBottom: showGrid && ri < rows.length - 1 ? '1px solid rgba(0,0,0,0.12)' : 'none',
                   }}>
                     {row.cells.map((c, ci) => {
                       const align = getAlign(c);
@@ -772,7 +772,7 @@ export default function App() {
                           width: c.width + 'pt', textAlign: align,
                           padding: ri === 0 ? '3pt 1pt' : '0 1pt 3pt 1pt',
                           verticalAlign: ri === 0 ? 'top' : 'middle',
-                          borderRight: ci < row.cells.length - 1 ? (showGrid ? '0.5px solid rgba(0,0,0,0.08)' : `1px solid ${STYLE.bg}`) : 'none',
+                          borderRight: ci < row.cells.length - 1 ? (showGrid ? '1px solid rgba(0,0,0,0.12)' : `1px solid ${STYLE.bg}`) : 'none',
                           whiteSpace: c.wrap ? 'normal' : 'nowrap',
                           overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
                           textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
