@@ -832,19 +832,20 @@ export default function App() {
                                   display: 'flex',
                                   textAlign: align, fontSize: '8pt', lineHeight: 1.1,
                                   fontWeight: c.field === 'sceneNumber' ? 700 : 500,
-                                  overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
                                   textTransform: c.field === 'set' ? 'uppercase' : 'none',
                                   color: assigned ? undefined : '#d4d4d8',
+                                  overflow: c.wrap ? 'visible' : 'hidden',
                                 }}>
                                   {c.prefix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{c.prefix}{'\u00A0'}</span>}
                                   <span style={{
-                                    flex: '1 1 0', minWidth: 0,
-                                    whiteSpace: c.wrap ? 'normal' : 'nowrap',
-                                    overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
+                                    flexShrink: 1, minWidth: 0,
+                          overflow: 'hidden',
                                     textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
+                                    whiteSpace: c.wrap ? 'normal' : 'nowrap',
                                     wordBreak: c.wrap ? 'break-word' : undefined,
                                   }}>{assigned ? label : 'Empty'}</span>
                                   {c.suffix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{'\u00A0'}{c.suffix}</span>}
+                                  {ci < row.cells.length - 1 && <span style={{ flex: '1 1 0' }} />}
                                 </div>
                               </div>
 
@@ -939,13 +940,14 @@ export default function App() {
                           <div style={{ display: 'flex' }}>
                             {c.prefix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{c.prefix}{'\u00A0'}</span>}
                             <span style={{
-                              flex: '1 1 0', minWidth: 0,
-                              whiteSpace: c.wrap ? 'normal' : 'nowrap',
+                              flexShrink: 1, minWidth: 0,
                               overflow: c.wrap ? 'visible' : (ci < row.cells.length - 1 ? 'hidden' : 'visible'),
                               textOverflow: c.wrap ? 'clip' : (ci < row.cells.length - 1 ? 'ellipsis' : 'clip'),
+                              whiteSpace: c.wrap ? 'normal' : 'nowrap',
                               wordBreak: c.wrap ? 'break-word' : undefined,
                             }}>{val}</span>
                             {c.suffix && <span style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{'\u00A0'}{c.suffix}</span>}
+                            {ci < row.cells.length - 1 && <span style={{ flex: '1 1 0' }} />}
                           </div>
                         </div>
                       );
